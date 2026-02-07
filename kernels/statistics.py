@@ -374,7 +374,7 @@ class StatisticsKernel(KernelInterface):
         if not operation:
             # Check if arguments imply a valid operation
             if any(k in args for k in ["effect_size", "group1", "data", "x"]):
-                pass # Valid inference possible
+                pass  # Valid inference possible
             else:
                 errors.append("Missing required field: operation (and could not infer from args)")
         elif operation not in self.SUPPORTED_OPERATIONS:

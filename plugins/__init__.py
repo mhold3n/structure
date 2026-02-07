@@ -10,10 +10,11 @@ from models.gate_decision import GateDecision
 
 logger = logging.getLogger(__name__)
 
+
 class PluginRegistry:
     """
     Registry for auto-discovering and loading domain plugins.
-    
+
     Plugins are expected to be Python packages/modules in the `plugins/` directory.
     Each plugin module should expose a `register()` function or define specific variables:
     - DOMAIN_ID: str
@@ -22,7 +23,7 @@ class PluginRegistry:
     - GATES: Dict[str, Callable[[TaskSpec], GateDecision]]
     - POLICIES: List[Path]
     """
-    
+
     def __init__(self, plugins_dir: str = "plugins"):
         self.plugins_dir = plugins_dir
         self.domains: Dict[str, Any] = {}
@@ -53,29 +54,30 @@ class PluginRegistry:
         # 1. Domain ID
         domain_id = getattr(module, "DOMAIN_ID", None)
         if not domain_id:
-            return # Skip non-conforming modules
-            
+            return  # Skip non-conforming modules
+
         self.domains[domain_id] = module
-        
+
         # 2. Keywords
         keywords = getattr(module, "KEYWORDS", [])
         if keywords:
             self.keywords[domain_id] = keywords
-            
+
         # 3. Kernels
         kernels = getattr(module, "KERNELS", [])
         for k in kernels:
             if issubclass(k, KernelInterface):
                 self.kernels[k.kernel_id] = k
-                
+
         # 4. Gates
         gates = getattr(module, "GATES", {})
         if isinstance(gates, dict):
             self.gates.update(gates)
-                
+
         # 5. Policies
         policies = getattr(module, "POLICIES", [])
         self.policies.extend(policies)
+
 
 # Global registry instance
 registry = PluginRegistry()

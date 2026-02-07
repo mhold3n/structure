@@ -54,25 +54,25 @@ class WorkflowBuilder:
             # 2. Extract parameters using LLM (D2 Determinism)
             # This fills in 'args' and other metadata
             extract_result = extract_spec(step_text)
-            
+
             if extract_result.success and extract_result.spec:
                 extracted_data = extract_result.spec
                 # Merge parameters into args
                 if "parameters" in extracted_data:
                     spec_data["args"] = extracted_data["parameters"]
-                
+
                 # Merge other fields if missing in classification
                 if "intent" in extracted_data and "intent" not in spec_data:
                     # TaskSpec doesn't have intent field yet, but might in future
                     pass
-            
+
             # 3. Create final merged TaskSpec
             # Ensure required fields are present
             if "request_id" not in spec_data:
                 spec_data["request_id"] = step_id
             if "user_input" not in spec_data:
                 spec_data["user_input"] = step_text
-                
+
             try:
                 task_spec = TaskSpec(**spec_data)
             except Exception:

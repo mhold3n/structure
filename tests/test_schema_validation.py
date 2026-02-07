@@ -33,9 +33,7 @@ class TestSchemaValidator:
 
     def test_rejects_invalid_task_request(self):
         validator = SchemaValidator()
-        invalid_request = {
-            "user_input": ""  # Empty string should fail minLength
-        }
+        invalid_request = {"user_input": ""}  # Empty string should fail minLength
         is_valid, errors = validator.validate_task_request(invalid_request)
         # Note: depends on schema having minLength constraint
         # If no constraint, this may pass

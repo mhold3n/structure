@@ -113,9 +113,9 @@ class TestSpecificWeightParaphrase:
             request = TaskRequest(request_id=f"sw-gate-{i}", user_input=phrase)
             spec = classify_task(request)
 
-            assert "ambiguity_gate" in spec.required_gates, (
-                f"Should need ambiguity gate: '{phrase}'"
-            )
+            assert (
+                "ambiguity_gate" in spec.required_gates
+            ), f"Should need ambiguity gate: '{phrase}'"
 
 
 class TestLbParaphrase:

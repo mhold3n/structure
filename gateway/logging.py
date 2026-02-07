@@ -15,6 +15,7 @@ class AuditRecord(BaseModel):
     """
     Immutable audit record for compliance.
     """
+
     event_id: str = Field(..., description="Unique ID for this audit event")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     actor_id: str = Field(..., description="User or system ID performing action")
@@ -22,7 +23,7 @@ class AuditRecord(BaseModel):
     resource_id: Optional[str] = Field(None, description="Target resource ID")
     status: str = Field(..., description="Outcome (SUCCESS, FAILURE, BLOCKED)")
     details: dict[str, Any] = Field(default_factory=dict, description="Contextual details")
-    
+
     # Compliance fields
     gates_passed: List[str] = Field(default_factory=list)
     policy_violations: List[str] = Field(default_factory=list)
