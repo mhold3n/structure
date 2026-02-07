@@ -44,7 +44,7 @@ def load_reason_codes() -> dict:
 def load_schema(schema_id: str) -> Optional[dict]:
     """
     Load a schema by ID.
-    
+
     schema_id can be:
     - Full filename: "problem_spec.schema.json"
     - Basename: "problem_spec"
@@ -52,7 +52,7 @@ def load_schema(schema_id: str) -> Optional[dict]:
     # Normalize schema_id
     if not schema_id.endswith(".schema.json"):
         schema_id = f"{schema_id}.schema.json"
-    
+
     schema_path = SCHEMAS_DIR / schema_id
     if schema_path.exists():
         with open(schema_path) as f:
@@ -63,7 +63,7 @@ def load_schema(schema_id: str) -> Optional[dict]:
 def load_policy(policy_id: str) -> Optional[dict]:
     """
     Load a policy by ID.
-    
+
     policy_id can be:
     - Full filename: "determinism.yaml"
     - Basename: "determinism"
@@ -71,7 +71,7 @@ def load_policy(policy_id: str) -> Optional[dict]:
     # Normalize policy_id
     if not policy_id.endswith(".yaml"):
         policy_id = f"{policy_id}.yaml"
-    
+
     policy_path = POLICIES_DIR / policy_id
     if policy_path.exists():
         with open(policy_path) as f:

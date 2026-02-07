@@ -5,7 +5,7 @@ from .gate_decision import GateDecision
 
 __all__ = [
     "TaskSpec",
-    "TaskRequest", 
+    "TaskRequest",
     "QuantityRef",
     "KernelInput",
     "KernelOutput",

@@ -18,35 +18,35 @@ PHYSICAL_CONSTANTS = {
         "unit": "m/s",
         "uncertainty": 0.0,
         "source": "CODATA 2018 (exact)",
-        "symbol": "c"
+        "symbol": "c",
     },
     "gravitational_constant": {
         "value": 6.67430e-11,
         "unit": "m3/(kg·s2)",
         "uncertainty": 0.00015e-11,
         "source": "CODATA 2018",
-        "symbol": "G"
+        "symbol": "G",
     },
     "planck_constant": {
         "value": 6.62607015e-34,
         "unit": "J·s",
         "uncertainty": 0.0,
         "source": "CODATA 2018 (exact)",
-        "symbol": "h"
+        "symbol": "h",
     },
     "boltzmann_constant": {
         "value": 1.380649e-23,
         "unit": "J/K",
         "uncertainty": 0.0,
         "source": "CODATA 2018 (exact)",
-        "symbol": "k"
+        "symbol": "k",
     },
     "avogadro_number": {
         "value": 6.02214076e23,
         "unit": "1/mol",
         "uncertainty": 0.0,
         "source": "CODATA 2018 (exact)",
-        "symbol": "N_A"
+        "symbol": "N_A",
     },
     "standard_gravity": {
         "value": 9.80665,
@@ -54,7 +54,7 @@ PHYSICAL_CONSTANTS = {
         "uncertainty": 0.0,
         "source": "ISO 80000-3 (exact by definition)",
         "symbol": "g_n",
-        "aliases": ["g", "gravity", "gravitational acceleration"]
+        "aliases": ["g", "gravity", "gravitational acceleration"],
     },
     "standard_atmosphere": {
         "value": 101325.0,
@@ -62,7 +62,7 @@ PHYSICAL_CONSTANTS = {
         "uncertainty": 0.0,
         "source": "ISO 2533 (exact by definition)",
         "symbol": "atm",
-        "aliases": ["atmospheric pressure", "1 atm"]
+        "aliases": ["atmospheric pressure", "1 atm"],
     },
     "water_density_20C": {
         "value": 998.2,
@@ -71,7 +71,7 @@ PHYSICAL_CONSTANTS = {
         "source": "CRC Handbook",
         "symbol": "ρ_water",
         "aliases": ["density of water", "water density"],
-        "note": "At 20°C and 1 atm"
+        "note": "At 20°C and 1 atm",
     },
     "water_specific_weight_20C": {
         "value": 9789.0,
@@ -81,7 +81,7 @@ PHYSICAL_CONSTANTS = {
         "symbol": "γ_water",
         "aliases": ["specific weight of water"],
         "note": "At 20°C and 1 atm. γ = ρg",
-        "disambiguation": "This is WEIGHT DENSITY (N/m³), not surface tension"
+        "disambiguation": "This is WEIGHT DENSITY (N/m³), not surface tension",
     },
     "water_surface_tension_20C": {
         "value": 0.0728,
@@ -91,7 +91,7 @@ PHYSICAL_CONSTANTS = {
         "symbol": "σ_water",
         "aliases": ["surface tension of water"],
         "note": "At 20°C against air",
-        "disambiguation": "This is SURFACE TENSION (N/m), not weight density"
+        "disambiguation": "This is SURFACE TENSION (N/m), not weight density",
     },
     "air_density_20C": {
         "value": 1.204,
@@ -100,7 +100,7 @@ PHYSICAL_CONSTANTS = {
         "source": "Ideal gas law at STP",
         "symbol": "ρ_air",
         "aliases": ["density of air", "air density"],
-        "note": "At 20°C and 1 atm, dry air"
+        "note": "At 20°C and 1 atm, dry air",
     },
     "universal_gas_constant": {
         "value": 8.314462618,
@@ -108,7 +108,7 @@ PHYSICAL_CONSTANTS = {
         "uncertainty": 0.0,
         "source": "CODATA 2018 (exact)",
         "symbol": "R",
-        "aliases": ["gas constant", "ideal gas constant"]
+        "aliases": ["gas constant", "ideal gas constant"],
     },
     "specific_gas_constant_air": {
         "value": 287.05,
@@ -116,7 +116,7 @@ PHYSICAL_CONSTANTS = {
         "uncertainty": 0.01,
         "source": "R/M_air",
         "symbol": "R_air",
-        "note": "For dry air"
+        "note": "For dry air",
     },
 }
 
@@ -125,86 +125,81 @@ PHYSICAL_CONSTANTS = {
 class ConstantsKernel(KernelInterface):
     """
     Physical constants lookup kernel.
-    
+
     Determinism level: D2 (full output determinism)
     """
-    
+
     kernel_id = "constants_v1"
     version = "1.0.0"
     determinism_level = "D2"
-    
+
     def execute(self, input: KernelInput) -> KernelOutput:
         """Execute with typed KernelInput."""
         return self._lookup(input.args, input.request_id)
-    
+
     def execute_legacy(self, args: dict) -> KernelOutput:
         """Legacy interface for backward compatibility."""
         return self._lookup(args, "legacy")
-    
+
     def _lookup(self, args: dict, request_id: str) -> KernelOutput:
         """Core lookup logic."""
         constant_id = args.get("constant_id")
         search_term = args.get("search", "").lower()
-        
+
         if constant_id:
             constant = PHYSICAL_CONSTANTS.get(constant_id)
             if constant:
                 return self._make_output(
                     request_id=request_id,
                     success=True,
-                    result={"constant_id": constant_id, **constant}
+                    result={"constant_id": constant_id, **constant},
                 )
             else:
                 return self._make_output(
                     request_id=request_id,
                     success=False,
                     error=f"Unknown constant: {constant_id}",
-                    warnings=[f"Unknown constant: {constant_id}"]
+                    warnings=[f"Unknown constant: {constant_id}"],
                 )
-        
+
         elif search_term:
             matches = []
             for cid, cdata in PHYSICAL_CONSTANTS.items():
                 aliases = cdata.get("aliases", [])
-                if (search_term in cid.lower() or 
-                    any(search_term in a.lower() for a in aliases)):
+                if search_term in cid.lower() or any(search_term in a.lower() for a in aliases):
                     matches.append({"constant_id": cid, **cdata})
-            
+
             if len(matches) == 1:
-                return self._make_output(
-                    request_id=request_id,
-                    success=True,
-                    result=matches[0]
-                )
+                return self._make_output(request_id=request_id, success=True, result=matches[0])
             elif len(matches) > 1:
                 return self._make_output(
                     request_id=request_id,
                     success=False,
                     result={"candidates": matches},
-                    warnings=["Multiple constants match. Disambiguation required."]
+                    warnings=["Multiple constants match. Disambiguation required."],
                 )
             else:
                 return self._make_output(
                     request_id=request_id,
                     success=False,
                     error=f"No constants found matching: {search_term}",
-                    warnings=[f"No constants found matching: {search_term}"]
+                    warnings=[f"No constants found matching: {search_term}"],
                 )
-        
+
         else:
             return self._make_output(
                 request_id=request_id,
                 success=False,
                 error="Either constant_id or search must be provided",
-                warnings=["Either constant_id or search must be provided"]
+                warnings=["Either constant_id or search must be provided"],
             )
-    
+
     def validate_args(self, args: dict) -> tuple[bool, list[str]]:
         """Validate inputs for constants lookup."""
         if "constant_id" not in args and "search" not in args:
             return (False, ["Either constant_id or search must be provided"])
         return (True, [])
-    
+
     def get_envelope(self) -> dict:
         """Return list of available constants."""
         return {"available_constants": list(PHYSICAL_CONSTANTS.keys())}
