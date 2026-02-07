@@ -1,0 +1,48 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "constraint_ast.schema.json",
+    "title": "ConstraintAST",
+    "description": "Abstract syntax tree for constraints",
+    "type": "object",
+    "properties": {
+        "node_type": {
+            "type": "string",
+            "enum": [
+                "AND",
+                "OR",
+                "NOT",
+                "COMPARE",
+                "LITERAL",
+                "QUANTITY_REF",
+                "FUNCTION"
+            ]
+        },
+        "operator": {
+            "type": "string",
+            "enum": [
+                "eq",
+                "ne",
+                "lt",
+                "le",
+                "gt",
+                "ge"
+            ]
+        },
+        "children": {
+            "type": "array",
+            "items": {
+                "$ref": "#"
+            }
+        },
+        "value": {},
+        "quantity_id": {
+            "type": "string"
+        },
+        "function_name": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "node_type"
+    ]
+}

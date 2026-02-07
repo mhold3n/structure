@@ -1,0 +1,57 @@
+# Determinism Policy Configuration
+
+levels:
+  D1:
+    name: "Numeric Determinism"
+    description: "Same canonical_spec_hash -> same numeric outputs"
+    requirements:
+      - fixed_random_seed
+      - no_floating_point_reordering
+      - canonical_rounding
+    tolerance:
+      relative: 1e-10
+      absolute: 1e-15
+
+  D2:
+    name: "Full Output Determinism"
+    description: "Bit-identical outputs including formatting"
+    requirements:
+      - D1_requirements
+      - canonical_output_formatting
+      - fixed_string_ordering
+    tolerance:
+      relative: 0
+      absolute: 0
+
+  NONE:
+    name: "No Determinism Guarantee"
+    description: "Output may vary between runs"
+    requirements: []
+    tolerance: null
+
+prohibited_under_determinism:
+  - approximate_cache_match
+  - speculative_execution
+  - auto_retry_llm_proposal
+  - non_idempotent_retry
+
+caching:
+  key_components:
+    - canonical_spec_hash
+    - kernel_id
+    - kernel_version
+  cacheable:
+    - kernel_outputs
+    - validated_specs
+  never_cacheable:
+    - llm_proposals
+    - user_sessions
+
+gpu_policy:
+  allowed_modes:
+    - "deterministic"
+    - "reproducible_within_tolerance"
+  default_mode: "deterministic"
+  cuda_deterministic: true
+  cublas_deterministic: true
+  rounding: "round_to_nearest_even"

@@ -1,0 +1,49 @@
+# File Write Policy Configuration
+
+default_mode: patch_only
+
+sandbox:
+  root: /sandbox
+  allow_escape: false
+
+allowed_directories:
+  - src/
+  - tests/
+  - docs/
+  - config/
+
+denied_patterns:
+  - "**/.env*"
+  - "**/secrets/**"
+  - "**/*.key"
+  - "**/*.pem"
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+
+operations:
+  create:
+    allowed: true
+    requires_approval: false
+  modify:
+    allowed: true
+    requires_approval: false
+  delete:
+    allowed: true
+    requires_approval: true  # Always requires explicit approval
+
+secret_scanning:
+  enabled: true
+  patterns:
+    - "api[_-]?key"
+    - "secret[_-]?key"
+    - "password"
+    - "token"
+    - "private[_-]?key"
+  action: reject
+
+release_gate:
+  required_checks:
+    - lint
+    - typecheck
+    - unit_tests
+  override_requires: admin_approval

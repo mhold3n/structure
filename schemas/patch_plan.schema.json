@@ -1,0 +1,54 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "patch_plan.schema.json",
+    "title": "PatchPlan",
+    "description": "File modification plan for code pipeline",
+    "type": "object",
+    "properties": {
+        "plan_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "patches": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string"
+                    },
+                    "operation": {
+                        "type": "string",
+                        "enum": [
+                            "create",
+                            "modify",
+                            "delete"
+                        ]
+                    },
+                    "diff": {
+                        "type": "string"
+                    },
+                    "requires_approval": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "file_path",
+                    "operation"
+                ]
+            }
+        },
+        "validation_status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "approved",
+                "rejected"
+            ]
+        }
+    },
+    "required": [
+        "plan_id",
+        "patches"
+    ]
+}

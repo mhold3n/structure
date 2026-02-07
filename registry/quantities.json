@@ -1,0 +1,389 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "QuantityRegistry",
+    "description": "Registry of physical quantities with collision metadata for ambiguity detection",
+    "quantities": [
+        {
+            "quantity_id": "mass",
+            "dimensions": {
+                "M": 1,
+                "L": 0,
+                "T": 0
+            },
+            "preferred_unit": "kg",
+            "admissible_units": [
+                "kg",
+                "g",
+                "[lb_av]",
+                "[oz_av]",
+                "[slug]"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "mass"
+            ],
+            "collides_with": [
+                "force.weight"
+            ],
+            "disambiguation_hint": "Mass is a scalar quantity measuring amount of matter"
+        },
+        {
+            "quantity_id": "length",
+            "dimensions": {
+                "M": 0,
+                "L": 1,
+                "T": 0
+            },
+            "preferred_unit": "m",
+            "admissible_units": [
+                "m",
+                "cm",
+                "mm",
+                "km",
+                "[ft_i]",
+                "[in_i]"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "length",
+                "distance",
+                "displacement"
+            ]
+        },
+        {
+            "quantity_id": "time",
+            "dimensions": {
+                "M": 0,
+                "L": 0,
+                "T": 1
+            },
+            "preferred_unit": "s",
+            "admissible_units": [
+                "s",
+                "min",
+                "h",
+                "d"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "time",
+                "duration"
+            ]
+        },
+        {
+            "quantity_id": "temperature",
+            "dimensions": {
+                "M": 0,
+                "L": 0,
+                "T": 0,
+                "Θ": 1
+            },
+            "preferred_unit": "K",
+            "admissible_units": [
+                "K",
+                "Cel",
+                "[degF]"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "temperature",
+                "temp"
+            ]
+        },
+        {
+            "quantity_id": "pressure",
+            "dimensions": {
+                "M": 1,
+                "L": -1,
+                "T": -2
+            },
+            "preferred_unit": "Pa",
+            "admissible_units": [
+                "Pa",
+                "kPa",
+                "MPa",
+                "bar",
+                "atm",
+                "[psi]"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "pressure"
+            ]
+        },
+        {
+            "quantity_id": "volume",
+            "dimensions": {
+                "M": 0,
+                "L": 3,
+                "T": 0
+            },
+            "preferred_unit": "m3",
+            "admissible_units": [
+                "m3",
+                "L",
+                "mL",
+                "[gal_us]"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "volume"
+            ]
+        },
+        {
+            "quantity_id": "force",
+            "dimensions": {
+                "M": 1,
+                "L": 1,
+                "T": -2
+            },
+            "preferred_unit": "N",
+            "admissible_units": [
+                "N",
+                "kN",
+                "[lbf_av]",
+                "dyn"
+            ],
+            "admissible_range": {
+                "min": null,
+                "max": null
+            },
+            "aliases": [
+                "force"
+            ]
+        },
+        {
+            "quantity_id": "force.weight",
+            "dimensions": {
+                "M": 1,
+                "L": 1,
+                "T": -2
+            },
+            "preferred_unit": "N",
+            "admissible_units": [
+                "N",
+                "kN",
+                "[lbf_av]"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "weight"
+            ],
+            "collides_with": [
+                "mass"
+            ],
+            "disambiguation_hint": "Weight is a force (mass × gravity), not mass itself"
+        },
+        {
+            "quantity_id": "fluid.gamma_weight_density",
+            "dimensions": {
+                "M": 1,
+                "L": -2,
+                "T": -2
+            },
+            "preferred_unit": "N/m3",
+            "admissible_units": [
+                "N/m3",
+                "[lbf_av]/[ft_i]3"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "specific weight",
+                "unit weight",
+                "weight density"
+            ],
+            "collides_with": [
+                "fluid.gamma_surface_tension"
+            ],
+            "disambiguation_hint": "Specific weight γ = ρg, force per unit volume (N/m³)"
+        },
+        {
+            "quantity_id": "fluid.gamma_surface_tension",
+            "dimensions": {
+                "M": 1,
+                "L": 0,
+                "T": -2
+            },
+            "preferred_unit": "N/m",
+            "admissible_units": [
+                "N/m",
+                "mN/m",
+                "dyn/cm"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "surface tension",
+                "gamma"
+            ],
+            "collides_with": [
+                "fluid.gamma_weight_density"
+            ],
+            "disambiguation_hint": "Surface tension γ, force per unit length at interface (N/m)"
+        },
+        {
+            "quantity_id": "fluid.density",
+            "dimensions": {
+                "M": 1,
+                "L": -3,
+                "T": 0
+            },
+            "preferred_unit": "kg/m3",
+            "admissible_units": [
+                "kg/m3",
+                "g/cm3",
+                "g/L",
+                "[slug]/[ft_i]3"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "density",
+                "mass density"
+            ]
+        },
+        {
+            "quantity_id": "fluid.specific_gravity",
+            "dimensions": {
+                "M": 0,
+                "L": 0,
+                "T": 0
+            },
+            "preferred_unit": "1",
+            "admissible_units": [
+                "1"
+            ],
+            "admissible_range": {
+                "min": 0,
+                "max": null
+            },
+            "aliases": [
+                "specific gravity",
+                "relative density",
+                "SG"
+            ],
+            "disambiguation_hint": "Dimensionless ratio of density to reference density"
+        },
+        {
+            "quantity_id": "energy",
+            "dimensions": {
+                "M": 1,
+                "L": 2,
+                "T": -2
+            },
+            "preferred_unit": "J",
+            "admissible_units": [
+                "J",
+                "kJ",
+                "MJ",
+                "cal",
+                "kcal",
+                "BTU",
+                "eV"
+            ],
+            "admissible_range": {
+                "min": null,
+                "max": null
+            },
+            "aliases": [
+                "energy",
+                "work",
+                "heat"
+            ]
+        },
+        {
+            "quantity_id": "power",
+            "dimensions": {
+                "M": 1,
+                "L": 2,
+                "T": -3
+            },
+            "preferred_unit": "W",
+            "admissible_units": [
+                "W",
+                "kW",
+                "MW",
+                "hp"
+            ],
+            "admissible_range": {
+                "min": null,
+                "max": null
+            },
+            "aliases": [
+                "power"
+            ]
+        },
+        {
+            "quantity_id": "velocity",
+            "dimensions": {
+                "M": 0,
+                "L": 1,
+                "T": -1
+            },
+            "preferred_unit": "m/s",
+            "admissible_units": [
+                "m/s",
+                "km/h",
+                "[mi_i]/h",
+                "[ft_i]/s"
+            ],
+            "admissible_range": {
+                "min": null,
+                "max": null
+            },
+            "aliases": [
+                "velocity",
+                "speed"
+            ]
+        },
+        {
+            "quantity_id": "acceleration",
+            "dimensions": {
+                "M": 0,
+                "L": 1,
+                "T": -2
+            },
+            "preferred_unit": "m/s2",
+            "admissible_units": [
+                "m/s2",
+                "[ft_i]/s2",
+                "Gal"
+            ],
+            "admissible_range": {
+                "min": null,
+                "max": null
+            },
+            "aliases": [
+                "acceleration"
+            ]
+        }
+    ]
+}

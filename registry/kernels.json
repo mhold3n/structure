@@ -1,0 +1,110 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "KernelRegistry",
+    "description": "Registry of compute kernels with envelope and golden test references",
+    "kernels": [
+        {
+            "kernel_id": "unit_converter_v1",
+            "version": "1.0.0",
+            "type": "classical",
+            "determinism_guarantee": "D1",
+            "compatible_domains": [
+                "*"
+            ],
+            "description": "Universal UCUM-based unit conversion",
+            "interface_hash": "sha256:pending",
+            "envelope_version": "1.0",
+            "envelope": {
+                "supported_unit_families": [
+                    "mass",
+                    "length",
+                    "time",
+                    "force",
+                    "pressure",
+                    "energy",
+                    "power",
+                    "velocity",
+                    "acceleration"
+                ]
+            },
+            "golden_tests": [
+                "tests/golden/unit_converter_001.json"
+            ]
+        },
+        {
+            "kernel_id": "dimensional_check_v1",
+            "version": "1.0.0",
+            "type": "classical",
+            "determinism_guarantee": "D2",
+            "compatible_domains": [
+                "*"
+            ],
+            "description": "Validates dimensional consistency of equations/constraints",
+            "interface_hash": "sha256:pending",
+            "envelope_version": "1.0",
+            "golden_tests": [
+                "tests/golden/dimensional_check_001.json"
+            ]
+        },
+        {
+            "kernel_id": "fluids_statics_v1",
+            "version": "1.0.0",
+            "type": "classical",
+            "determinism_guarantee": "D1",
+            "compatible_domains": [
+                "physics.fluids"
+            ],
+            "description": "Fluid statics calculations: pressure, buoyancy, hydrostatic force",
+            "interface_hash": "sha256:pending",
+            "envelope_version": "1.0",
+            "envelope": {
+                "max_depth_m": 1000,
+                "min_density_kg_m3": 0.1,
+                "max_density_kg_m3": 20000
+            },
+            "golden_tests": [
+                "tests/golden/fluids_statics_001.json"
+            ]
+        },
+        {
+            "kernel_id": "thermo_ideal_gas_v1",
+            "version": "1.0.0",
+            "type": "classical",
+            "determinism_guarantee": "D1",
+            "compatible_domains": [
+                "physics.thermodynamics"
+            ],
+            "description": "Ideal gas law calculations and state changes",
+            "interface_hash": "sha256:pending",
+            "envelope_version": "1.0",
+            "envelope": {
+                "min_temperature_K": 1,
+                "max_temperature_K": 10000,
+                "min_pressure_Pa": 1,
+                "max_pressure_Pa": 1e9
+            },
+            "golden_tests": [
+                "tests/golden/thermo_ideal_gas_001.json"
+            ]
+        },
+        {
+            "kernel_id": "mechanics_kinematics_v1",
+            "version": "1.0.0",
+            "type": "classical",
+            "determinism_guarantee": "D1",
+            "compatible_domains": [
+                "physics.mechanics"
+            ],
+            "description": "Kinematic equations: displacement, velocity, acceleration",
+            "interface_hash": "sha256:pending",
+            "envelope_version": "1.0",
+            "envelope": {
+                "max_velocity_m_s": 3e8,
+                "supports_relativistic": false
+            },
+            "golden_tests": [
+                "tests/golden/mechanics_kinematics_001.json"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,94 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "ReasonCodes",
+    "description": "Canonical reason codes for gate decisions",
+    "reason_codes": {
+        "SCHEMA_INVALID": {
+            "severity": "error",
+            "description": "Input failed schema validation",
+            "suggested_action": "REJECT"
+        },
+        "UNITS_MISMATCH": {
+            "severity": "error",
+            "description": "Dimensional analysis failed - units don't match quantity",
+            "suggested_action": "CLARIFY"
+        },
+        "UNIT_AMBIGUOUS": {
+            "severity": "warning",
+            "description": "Unit string maps to multiple interpretations (e.g., lb → lbf or lbm)",
+            "suggested_action": "CLARIFY",
+            "requires_fields": [
+                "unit_clarification"
+            ]
+        },
+        "TERM_COLLISION": {
+            "severity": "warning",
+            "description": "Term maps to multiple quantity_ids with different dimensions",
+            "suggested_action": "CLARIFY",
+            "requires_fields": [
+                "term_disambiguation"
+            ]
+        },
+        "UCUM_PARSE_FAIL": {
+            "severity": "error",
+            "description": "Unit string could not be parsed as valid UCUM",
+            "suggested_action": "CLARIFY",
+            "requires_fields": [
+                "unit_restatement"
+            ]
+        },
+        "INCOMPLETE_SPEC": {
+            "severity": "warning",
+            "description": "Required fields missing from specification",
+            "suggested_action": "CLARIFY"
+        },
+        "AMBIGUOUS_INTENT": {
+            "severity": "warning",
+            "description": "Multiple interpretations possible for user request",
+            "suggested_action": "CLARIFY"
+        },
+        "DISALLOWED_TERM": {
+            "severity": "warning",
+            "description": "Term requires explicit disambiguation per policy",
+            "suggested_action": "CLARIFY"
+        },
+        "OUT_OF_ENVELOPE": {
+            "severity": "error",
+            "description": "Input outside kernel's valid envelope",
+            "suggested_action": "FALLBACK"
+        },
+        "KERNEL_ABSTAIN": {
+            "severity": "info",
+            "description": "Kernel declined to process",
+            "suggested_action": "FALLBACK"
+        },
+        "SANITY_CHECK_FAIL": {
+            "severity": "error",
+            "description": "Post-kernel sanity check failed",
+            "suggested_action": "ESCALATE"
+        },
+        "CITATION_MISSING": {
+            "severity": "warning",
+            "description": "Research claim lacks citation",
+            "suggested_action": "CLARIFY"
+        },
+        "DIAGNOSTIC_ARTIFACTS_MISSING": {
+            "severity": "error",
+            "description": "Diagnostic task requires artifact_refs but none provided",
+            "suggested_action": "CLARIFY",
+            "requires_fields": [
+                "artifact_refs"
+            ]
+        },
+        "STRING_MATH_DETECTED": {
+            "severity": "error",
+            "description": "Spec contains forbidden string-based math expressions",
+            "suggested_action": "REJECT"
+        },
+        "LLM_DIMENSIONS_DETECTED": {
+            "severity": "error",
+            "description": "LLM attempted to author dimensions directly (forbidden)",
+            "suggested_action": "REJECT"
+        }
+    }
+}

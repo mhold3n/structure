@@ -1,0 +1,61 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "kernel_io.schema.json",
+    "title": "KernelIO",
+    "description": "Input/output contract for compute kernels",
+    "type": "object",
+    "properties": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "canonical_spec": {
+                    "$ref": "problem_spec.schema.json"
+                },
+                "feature_vector": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "required": [
+                "canonical_spec"
+            ]
+        },
+        "output": {
+            "type": "object",
+            "properties": {
+                "result_bundle": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "uncertainty": {
+                    "type": "number"
+                },
+                "validity_flags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
+                "kernel_provenance": {
+                    "type": "object",
+                    "properties": {
+                        "kernel_id": {
+                            "type": "string"
+                        },
+                        "version": {
+                            "type": "string"
+                        },
+                        "execution_time_ms": {
+                            "type": "number"
+                        }
+                    }
+                }
+            },
+            "required": [
+                "result_bundle"
+            ]
+        }
+    }
+}

@@ -1,0 +1,128 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "diagnostic_spec.schema.json",
+    "title": "DiagnosticSpec",
+    "description": "Problem specification for diagnostic/debug tasks (not numeric solve)",
+    "type": "object",
+    "properties": {
+        "spec_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "problem_type": {
+            "type": "string",
+            "const": "diagnostic"
+        },
+        "artifact_refs": {
+            "type": "array",
+            "description": "References to debug artifacts (logs, traces, outputs)",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Relative or absolute path to artifact"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "solver_trace",
+                            "kkt_residuals",
+                            "log",
+                            "code",
+                            "config",
+                            "output"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "path",
+                    "type"
+                ]
+            },
+            "minItems": 1
+        },
+        "optimizer_family": {
+            "type": "string",
+            "enum": [
+                "sqp",
+                "interior_point",
+                "sgd",
+                "adam",
+                "lbfgs",
+                "newton",
+                "trust_region",
+                "other"
+            ],
+            "description": "Family of optimizer being diagnosed"
+        },
+        "observations": {
+            "type": "array",
+            "description": "User-reported observations about the failure",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "enum": [
+                            "divergence",
+                            "oscillation",
+                            "stall",
+                            "infeasibility",
+                            "unbounded",
+                            "slow_convergence",
+                            "numerical_error",
+                            "other"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "iteration": {
+                        "type": "integer",
+                        "description": "Iteration number where pattern was observed"
+                    }
+                },
+                "required": [
+                    "pattern"
+                ]
+            }
+        },
+        "solver_config": {
+            "type": "object",
+            "description": "Solver configuration being diagnosed",
+            "properties": {
+                "solver_name": {
+                    "type": "string"
+                },
+                "tolerances": {
+                    "type": "object"
+                },
+                "max_iterations": {
+                    "type": "integer"
+                },
+                "linear_solver": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "required": [
+        "spec_id",
+        "problem_type",
+        "artifact_refs"
+    ],
+    "if": {
+        "properties": {
+            "artifact_refs": {
+                "maxItems": 0
+            }
+        }
+    },
+    "then": {
+        "description": "If no artifacts provided, gate will CLARIFY for minimal debug artifacts"
+    }
+}

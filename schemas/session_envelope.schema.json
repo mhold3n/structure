@@ -1,0 +1,32 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "session_envelope.schema.json",
+    "title": "SessionEnvelope",
+    "description": "API boundary envelope for incoming requests",
+    "type": "object",
+    "properties": {
+        "session_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "domain_hint": {
+            "type": "string"
+        },
+        "user_input": {
+            "type": "string"
+        },
+        "context": {
+            "type": "object",
+            "additionalProperties": true
+        }
+    },
+    "required": [
+        "session_id",
+        "timestamp",
+        "user_input"
+    ]
+}

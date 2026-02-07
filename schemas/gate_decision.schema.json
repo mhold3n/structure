@@ -1,0 +1,42 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "gate_decision.schema.json",
+    "title": "GateDecision",
+    "description": "Validation gate decision output",
+    "type": "object",
+    "properties": {
+        "gate_id": {
+            "type": "string"
+        },
+        "decision": {
+            "type": "string",
+            "enum": [
+                "ACCEPT",
+                "CLARIFY",
+                "FALLBACK",
+                "ESCALATE",
+                "REJECT"
+            ]
+        },
+        "reasons": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "required_fields": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "fallback_target": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "gate_id",
+        "decision",
+        "reasons"
+    ]
+}

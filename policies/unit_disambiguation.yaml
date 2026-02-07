@@ -1,0 +1,100 @@
+# Unit Disambiguation Policy
+# Forces UCUM; rejects ambiguous bare units
+
+require_ucum: true
+
+# Units that require clarification before acceptance
+ambiguous_units:
+  lb:
+    action: CLARIFY
+    candidates:
+      - "[lb_av]" # avoirdupois pound (mass)
+      - "[lbf_av]" # pound-force
+    question: "Is 'lb' a force (lbf) or mass (lbm)?"
+    reason_code: UNIT_AMBIGUOUS
+
+  pound:
+    action: CLARIFY
+    candidates:
+      - "[lb_av]"
+      - "[lbf_av]"
+    question: "Is 'pound' a force or mass?"
+    reason_code: UNIT_AMBIGUOUS
+
+  lbs:
+    action: CLARIFY
+    candidates:
+      - "[lb_av]"
+      - "[lbf_av]"
+    question: "Is 'lbs' pounds-force or pounds-mass?"
+    reason_code: UNIT_AMBIGUOUS
+
+  gamma:
+    action: CLARIFY
+    candidates:
+      - "N/m3" # weight density
+      - "N/m" # surface tension
+    question: "Is 'gamma' weight density (N/m³) or surface tension (N/m)?"
+    reason_code: UNIT_AMBIGUOUS
+
+  slug:
+    action: ACCEPT # unambiguous mass unit
+    ucum: "[slug]"
+
+# Terms that must be disambiguated before processing
+disallowed_without_disambiguator:
+  - specific weight
+  - unit weight
+  - weight
+  - pound
+  - gamma
+
+# Mapping of common non-UCUM units to UCUM
+unit_aliases:
+  kg: "kg"
+  kilogram: "kg"
+  m: "m"
+  meter: "m"
+  metre: "m"
+  s: "s"
+  sec: "s"
+  second: "s"
+  N: "N"
+  newton: "N"
+  Pa: "Pa"
+  pascal: "Pa"
+  psi: "[psi]"
+  atm: "atm"
+  bar: "bar"
+  lbf: "[lbf_av]"
+  lbm: "[lb_av]"
+  slug: "[slug]"
+
+# Dimensional families for validation
+unit_families:
+  mass:
+    ucum_base: "kg"
+    members: ["kg", "g", "[lb_av]", "[oz_av]", "[slug]"]
+
+  force:
+    ucum_base: "N"
+    members: ["N", "[lbf_av]", "kN", "dyn"]
+
+  length:
+    ucum_base: "m"
+    members: ["m", "cm", "mm", "km", "[ft_i]", "[in_i]", "[mi_i]"]
+
+  pressure:
+    ucum_base: "Pa"
+    members: ["Pa", "kPa", "MPa", "bar", "atm", "[psi]"]
+
+# Gate behavior
+on_ucum_parse_fail:
+  action: CLARIFY
+  reason_code: UCUM_PARSE_FAIL
+  message: "Could not parse unit. Please specify in standard form."
+
+on_unit_family_mismatch:
+  action: REJECT
+  reason_code: UNITS_MISMATCH
+  message: "Unit does not match expected dimensional family for quantity."

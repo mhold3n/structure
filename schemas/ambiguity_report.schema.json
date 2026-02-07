@@ -1,0 +1,91 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "ambiguity_report.schema.json",
+    "title": "AmbiguityReport",
+    "description": "Structured ambiguity signals extracted before LLM spec extraction",
+    "type": "object",
+    "properties": {
+        "detected_units": {
+            "type": "array",
+            "description": "Units detected in user input with UCUM parse results",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "raw": {
+                        "type": "string",
+                        "description": "Original unit string from input"
+                    },
+                    "ucum": {
+                        "type": "string",
+                        "description": "UCUM-normalized unit, null if parse failed"
+                    },
+                    "parse_success": {
+                        "type": "boolean"
+                    },
+                    "parse_error": {
+                        "type": "string",
+                        "description": "Error message if parse failed"
+                    }
+                },
+                "required": [
+                    "raw",
+                    "parse_success"
+                ]
+            }
+        },
+        "candidate_quantity_ids": {
+            "type": "array",
+            "description": "Potential quantity_id matches from ontology",
+            "items": {
+                "type": "string"
+            }
+        },
+        "collisions": {
+            "type": "array",
+            "description": "Terms that map to multiple quantity_ids with different dimensions",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "term": {
+                        "type": "string",
+                        "description": "The ambiguous term from user input"
+                    },
+                    "candidates": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Possible quantity_id matches"
+                    },
+                    "dimensions_differ": {
+                        "type": "boolean",
+                        "description": "True if candidates have different dimensional signatures"
+                    }
+                },
+                "required": [
+                    "term",
+                    "candidates"
+                ]
+            }
+        },
+        "missing_required": {
+            "type": "array",
+            "description": "Required fields for the detected domain that are missing",
+            "items": {
+                "type": "string"
+            }
+        },
+        "disallowed_terms_found": {
+            "type": "array",
+            "description": "Terms from policy.disallowed_without_disambiguator found in input",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": [
+        "detected_units",
+        "collisions",
+        "missing_required"
+    ]
+}

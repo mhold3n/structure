@@ -1,0 +1,124 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "problem_spec.schema.json",
+    "title": "ProblemSpec",
+    "description": "LLM-extracted problem specification. Dimensions are derived by validator, never authored by LLM.",
+    "type": "object",
+    "properties": {
+        "spec_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "domain_id": {
+            "type": "string"
+        },
+        "problem_type": {
+            "type": "string",
+            "enum": [
+                "numeric",
+                "diagnostic",
+                "research"
+            ],
+            "default": "numeric"
+        },
+        "quantities": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/QuantityRef"
+            }
+        },
+        "constraints": {
+            "$ref": "constraint_ast.schema.json"
+        },
+        "objective": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "spec_id",
+        "domain_id"
+    ],
+    "not": {
+        "anyOf": [
+            {
+                "required": [
+                    "expression"
+                ]
+            },
+            {
+                "required": [
+                    "formula"
+                ]
+            },
+            {
+                "required": [
+                    "equation"
+                ]
+            },
+            {
+                "required": [
+                    "string_math"
+                ]
+            }
+        ]
+    },
+    "$defs": {
+        "QuantityRef": {
+            "type": "object",
+            "description": "Reference to a quantity. Unit must be UCUM-formatted. Dimensions are derived by validator.",
+            "properties": {
+                "quantity_id": {
+                    "type": "string",
+                    "description": "Must match an entry in registry/quantities.json"
+                },
+                "value": {
+                    "type": "number"
+                },
+                "unit_ucum": {
+                    "type": "string",
+                    "description": "UCUM-formatted unit string (e.g., 'kg', 'm/s2', 'N/m3')"
+                },
+                "unit_raw": {
+                    "type": "string",
+                    "description": "Original unit string from user input (for provenance)"
+                },
+                "validator_derived_dimensions": {
+                    "type": "object",
+                    "description": "READ-ONLY. Set by validator from ontology lookup, not by LLM.",
+                    "properties": {
+                        "M": {
+                            "type": "integer"
+                        },
+                        "L": {
+                            "type": "integer"
+                        },
+                        "T": {
+                            "type": "integer"
+                        },
+                        "Θ": {
+                            "type": "integer"
+                        },
+                        "I": {
+                            "type": "integer"
+                        },
+                        "N": {
+                            "type": "integer"
+                        },
+                        "J": {
+                            "type": "integer"
+                        }
+                    },
+                    "readOnly": true
+                }
+            },
+            "required": [
+                "quantity_id"
+            ],
+            "not": {
+                "required": [
+                    "dimensions"
+                ]
+            }
+        }
+    }
+}

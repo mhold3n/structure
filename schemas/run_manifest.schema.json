@@ -1,0 +1,58 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "run_manifest.schema.json",
+    "title": "RunManifest",
+    "description": "Provenance record for a pipeline run",
+    "type": "object",
+    "properties": {
+        "run_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "spec_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "canonical_spec_hash": {
+            "type": "string"
+        },
+        "ambiguity_report": {
+            "$ref": "ambiguity_report.schema.json",
+            "description": "Structured ambiguity signals extracted before LLM spec extraction"
+        },
+        "kernel_id": {
+            "type": "string"
+        },
+        "kernel_version": {
+            "type": "string"
+        },
+        "determinism_level": {
+            "type": "string",
+            "enum": [
+                "D1",
+                "D2",
+                "NONE"
+            ]
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "gate_decisions": {
+            "type": "array",
+            "items": {
+                "$ref": "gate_decision.schema.json"
+            }
+        },
+        "result_hash": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "run_id",
+        "spec_id",
+        "canonical_spec_hash",
+        "ambiguity_report",
+        "timestamp"
+    ]
+}

@@ -1,0 +1,39 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "DomainRegistry",
+    "description": "Registry of supported domains",
+    "domains": [
+        {
+            "domain_id": "physics.mechanics",
+            "display_name": "Classical Mechanics",
+            "routing_triggers": [
+                "force",
+                "motion",
+                "velocity",
+                "acceleration"
+            ],
+            "required_quantities": [
+                "mass",
+                "length",
+                "time"
+            ],
+            "default_kernel": "classical_mechanics_v1"
+        },
+        {
+            "domain_id": "physics.thermodynamics",
+            "display_name": "Thermodynamics",
+            "routing_triggers": [
+                "heat",
+                "temperature",
+                "entropy",
+                "energy"
+            ],
+            "required_quantities": [
+                "temperature",
+                "pressure",
+                "volume"
+            ],
+            "default_kernel": "thermodynamics_v1"
+        }
+    ]
+}

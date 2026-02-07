@@ -1,0 +1,45 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "ASTAllowlist",
+    "description": "Allowed AST nodes and operators per domain",
+    "global_allowlist": {
+        "node_types": [
+            "AND",
+            "OR",
+            "NOT",
+            "COMPARE",
+            "LITERAL",
+            "QUANTITY_REF"
+        ],
+        "operators": [
+            "eq",
+            "ne",
+            "lt",
+            "le",
+            "gt",
+            "ge"
+        ]
+    },
+    "domain_extensions": {
+        "physics.mechanics": {
+            "functions": [
+                "sin",
+                "cos",
+                "sqrt",
+                "abs"
+            ]
+        },
+        "physics.thermodynamics": {
+            "functions": [
+                "log",
+                "exp",
+                "sqrt"
+            ]
+        }
+    },
+    "reject_behavior": {
+        "unknown_node": "REJECT",
+        "unknown_operator": "REJECT",
+        "unknown_function": "CLARIFY"
+    }
+}
