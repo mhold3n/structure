@@ -28,10 +28,10 @@ KERNEL_IMPLEMENTATIONS = {
     "thermo_ideal_gas_v1": None,
     "mechanics_kinematics_v1": None,
     # Planned - AI Lab
-    "statistics_v1": None,
-    "experiment_design_v1": None,
-    "project_mgmt_v1": None,
-    "data_summary_v1": None,
+    "statistics_v1": ("kernels.statistics", "StatisticsKernel"),
+    "experiment_design_v1": ("kernels.experiment", "ExperimentKernel"),
+    "project_mgmt_v1": ("kernels.project", "ProjectKernel"),
+    "data_summary_v1": ("kernels.data_summary", "DataSummaryKernel"),
 }
 
 
