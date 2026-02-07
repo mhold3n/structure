@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install pyyaml
+
+            - name: Run tests
+              run: python tests/test_golden_path.py
+
+            - name: Validate JSON schemas
+              run: |
+                  for f in schemas/*.json registry/*.json; do
+                    python -c "import json; json.load(open('$f'))" && echo "$f: valid"
+                  done
+
+            - name: Validate YAML policies
+              run: |
+                  for f in policies/*.yaml; do
+                    python -c "import yaml; yaml.safe_load(open('$f'))" && echo "$f: valid"
+                  done
