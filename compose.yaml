@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  # Core API Gateway
+  gateway:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./sql_app.db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+
+  # Infrastructure
+  redis:
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Bootstrap Service (Runs once on startup)
+  bootstrap:
+    build:
+      context: .
+      dockerfile: services/bootstrap/Dockerfile
+    environment:
+      - DATABASE_URL=sqlite:///./sql_app.db
+    depends_on:
+      redis:
+        condition: service_healthy

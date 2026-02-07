@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Document",
+    "type": "object",
+    "required": [
+        "id",
+        "provenance",
+        "license",
+        "source_path",
+        "content"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique identifier (UUID or hash)"
+        },
+        "provenance": {
+            "type": "object",
+            "required": [
+                "source_name",
+                "date_acquired"
+            ],
+            "properties": {
+                "source_name": {
+                    "type": "string"
+                },
+                "date_acquired": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "author": {
+                    "type": "string"
+                }
+            }
+        },
+        "license": {
+            "type": "string",
+            "enum": [
+                "CC-BY",
+                "CC-BY-SA",
+                "Public Domain",
+                "Proprietary"
+            ]
+        },
+        "source_path": {
+            "type": "string",
+            "description": "Path to original raw file"
+        },
+        "content": {
+            "type": "string",
+            "description": "Full text content"
+        }
+    }
+}

@@ -1,0 +1,15 @@
+models:
+  - id: "gpt-4-turbo"
+    provider: "openai"
+    version: "2024-04-09"
+    capabilities: ["reasoning", "coding", "extraction"]
+    usage:
+      - research_mode
+      - creative_mode
+
+  - id: "embedding-001"
+    provider: "local"
+    version: "v1.0"
+    capabilities: ["embedding"]
+    usage:
+      - retrieval
