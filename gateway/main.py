@@ -14,6 +14,7 @@ from datetime import datetime
 from .logging import StructuredLogger
 from models.task_spec import TaskSpec, TaskRequest
 from models.gate_decision import GateDecision, Decision
+from models.clarify import ClarifyRequest  # noqa: F401 - available for future use
 from validator.loader import load_registry, load_schema, load_policy
 from validator.gates import run_gates, get_blocking_decisions
 from router.classifier import classify_task
@@ -21,7 +22,7 @@ from router.classifier import classify_task
 app = FastAPI(
     title="R&D Orchestration Gateway",
     description="Deterministic Kernels + LLM Interface",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 logger = StructuredLogger("gateway")
@@ -38,6 +39,15 @@ class TaskRequestInput(BaseModel):
     context: Optional[dict[str, Any]] = None
 
 
+class ClarifyPayload(BaseModel):
+    """Structured clarification payload for CLARIFY responses."""
+
+    reason_codes: list[str] = Field(default_factory=list)
+    questions: list[dict] = Field(default_factory=list)
+    context: dict = Field(default_factory=dict)
+    required_fields: list[str] = Field(default_factory=list)
+
+
 class TaskResponse(BaseModel):
     """Response to a task request."""
 
@@ -46,8 +56,7 @@ class TaskResponse(BaseModel):
     spec: Optional[dict] = None
     result: Optional[Any] = None
     gate_decisions: Optional[list[dict]] = None
-    required_fields: Optional[list[str]] = None
-    clarifying_questions: Optional[list[str]] = None
+    clarify: Optional[ClarifyPayload] = None  # Structured clarify payload
     message: Optional[str] = None
 
 
@@ -94,22 +103,44 @@ async def submit_task(input: TaskRequestInput) -> TaskResponse:
         if blocking:
             first_block = blocking[0]
 
-            # Collect all required fields and questions
-            all_required = []
+            # Build structured clarify payload
+            all_reasons = []
             all_questions = []
+            all_required = []
+
             for g in blocking:
+                all_reasons.extend(g.reasons)
                 all_required.extend(g.required_fields)
-                all_questions.extend(g.clarifying_questions)
+                for i, q in enumerate(g.clarifying_questions):
+                    all_questions.append(
+                        {
+                            "id": f"{g.gate_id}_{i}",
+                            "prompt": q,
+                            "type": "choice" if g.required_fields else "text",
+                            "required": True,
+                        }
+                    )
 
             status = "clarify" if first_block.decision == Decision.CLARIFY else "reject"
+
+            clarify_payload = ClarifyPayload(
+                reason_codes=list(set(all_reasons)),
+                questions=all_questions,
+                context={
+                    "domain": spec.domain.value,
+                    "subdomain": spec.subdomain,
+                    "detected_terms": spec.quantities,
+                    "blocking_gates": [g.gate_id for g in blocking],
+                },
+                required_fields=list(set(all_required)),
+            )
 
             return TaskResponse(
                 request_id=request_id,
                 status=status,
                 spec=spec.model_dump(),
                 gate_decisions=[g.model_dump() for g in gate_results],
-                required_fields=list(set(all_required)),
-                clarifying_questions=all_questions,
+                clarify=clarify_payload,
                 message=f"Blocked by {first_block.gate_id}: {first_block.reasons}",
             )
 
