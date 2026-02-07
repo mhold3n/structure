@@ -1,0 +1,77 @@
+# LLM Extraction Policy
+# Governs the behavior of LLM-based specification extraction
+
+version: "1.0.0"
+
+# Determinism requirements
+determinism:
+  level: D2
+  description: >
+    LLM extraction uses frozen parameters (temperature=0, fixed seed)
+    to achieve D2-level reproducibility. Same input should produce
+    semantically equivalent outputs across invocations.
+  parameters:
+    temperature: 0.0
+    max_tokens: 1024
+    seed: 42
+
+# Mode selection rules
+mode_selection:
+  default: local
+  escalation_triggers:
+    - condition: word_count > 200
+      mode: openrouter
+      reason: "Long inputs may require more context understanding"
+    - condition: multi_step_task
+      mode: openrouter
+      reason: "Multi-step tasks need better reasoning"
+    - condition: technical_jargon
+      mode: openrouter
+      reason: "Specialized terminology needs larger model"
+
+# Fallback behavior
+fallback:
+  on_openrouter_failure: local
+  on_local_failure: error
+  max_retries: 2
+
+# Output validation
+validation:
+  require_json: true
+  required_fields:
+    - domain
+    - intent
+    - complexity
+  optional_fields:
+    - entities
+    - parameters
+    - constraints
+    - ambiguities
+
+# Security
+security:
+  api_key_source: environment
+  env_var_name: OPENROUTER_API_KEY
+  log_prompts: false
+  log_responses: false
+
+# Rate limiting (placeholder for production)
+rate_limits:
+  local:
+    requests_per_minute: 60
+  openrouter:
+    requests_per_minute: 10
+    requests_per_day: 100
+
+# Model preferences
+models:
+  openrouter:
+    primary: "anthropic/claude-3-haiku"
+    fallback: "openai/gpt-3.5-turbo"
+  local:
+    placeholder: true
+    implementation_notes: >
+      Replace with local model inference using:
+      - llama.cpp for CPU inference
+      - vLLM for GPU inference
+      - Ollama for easy deployment
