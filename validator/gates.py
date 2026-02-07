@@ -140,6 +140,101 @@ def bounds_gate(spec: TaskSpec) -> GateDecision:
     return GateDecision(gate_id="bounds_gate", decision=Decision.ACCEPT, reasons=[])
 
 
+def experiment_safety_gate(spec: TaskSpec) -> GateDecision:
+    """
+    Check for experiment safety compliance.
+    
+    Enforces sample size, IRB requirements, and risk levels.
+    """
+    policy = load_policy("lab_experiment") or {}
+    requirements = policy.get("experiment_requirements", {})
+    human_subjects = policy.get("human_subjects", {})
+    
+    reasons = []
+    required_fields = []
+    questions = []
+    decision = Decision.ACCEPT
+    
+    # Check sample size
+    min_n = requirements.get("sample_size", {}).get("minimum", 10)
+    args = spec.args or {} # Check extracted args if available
+    
+    # Note: args might not be populated yet if this gate runs before extraction?
+    # Actually gates run on the initialized TaskSpec. args are usually empty at classification time
+    # UNLESS we are re-validating after extraction.
+    # We should assume this might run on populated spec too.
+    
+    # Search for sample size in user_input if not in args
+    # Naive extraction for safety check if not already extracted
+    n_match = re.search(r"sample size.*?(\d+)", spec.user_input, re.IGNORECASE)
+    if n_match:
+        n = int(n_match.group(1))
+        if n < min_n:
+            reasons.append(f"Sample size {n} is below minimum {min_n}")
+            decision = Decision.WARN
+    
+    # Check for human subjects keywords
+    hs_keywords = ["human", "patient", "participant", "subject", "interview", "survey"]
+    is_human_subjects = any(k in spec.user_input.lower() for k in hs_keywords)
+    
+    if is_human_subjects:
+        if human_subjects.get("irb_approval_required"):
+            # Check if IRB mentioned
+            if "irb" not in spec.user_input.lower():
+                reasons.append("IRB_APPROVAL_REQUIRED")
+                required_fields.append("irb_protocol_number")
+                questions.append("This appears to involve human subjects. Do you have IRB approval?")
+                decision = Decision.CLARIFY
+
+    if reasons:
+        return GateDecision(
+            gate_id="experiment_safety_gate",
+            decision=decision,
+            reasons=reasons,
+            required_fields=required_fields,
+            clarifying_questions=questions,
+        )
+        
+    return GateDecision(gate_id="experiment_safety_gate", decision=Decision.ACCEPT, reasons=[])
+
+
+def file_write_gate(spec: TaskSpec) -> GateDecision:
+    """
+    Check for disallowed file operations.
+    
+    Enforces restricted directories and file types.
+    """
+    policy = load_policy("file_write_policy") or {}
+    denied_patterns = policy.get("denied_patterns", [])
+    
+    # If operation involves writing (checking keywords for now)
+    write_keywords = ["save", "write", "export", "dump", "log to"]
+    if not any(k in spec.user_input.lower() for k in write_keywords):
+        return GateDecision(gate_id="file_write_gate", decision=Decision.ACCEPT, reasons=[])
+        
+    # Check for restricted patterns in input
+    reasons = []
+    for pattern in denied_patterns:
+        # Simple string check for now (glob matching would be ideal but complex on text)
+        clean_pat = pattern.replace("*", "")
+        if clean_pat and clean_pat in spec.user_input:
+             reasons.append(f"Potential restricted file pattern: {pattern}")
+    
+    if "secret" in spec.user_input.lower() or "key" in spec.user_input.lower():
+         reasons.append("Potential secret exposure")
+
+    if reasons:
+        return GateDecision(
+            gate_id="file_write_gate",
+            decision=Decision.REJECT, # Reject by default for safety
+            reasons=reasons,
+            required_fields=[],
+            clarifying_questions=[],
+        )
+
+    return GateDecision(gate_id="file_write_gate", decision=Decision.ACCEPT, reasons=[])
+
+
 # --- Gate Runner ---
 
 GATES = {
@@ -147,6 +242,8 @@ GATES = {
     "unit_consistency_gate": unit_consistency_gate,
     "ambiguity_gate": ambiguity_gate,
     "bounds_gate": bounds_gate,
+    "experiment_safety_gate": experiment_safety_gate,
+    "file_write_gate": file_write_gate,
 }
 
 

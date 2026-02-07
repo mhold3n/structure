@@ -97,6 +97,8 @@ class TaskSpec(BaseModel):
     # Execution plan
     required_gates: list[str] = Field(default_factory=list)
     selected_kernels: list[str] = Field(default_factory=list)
+    # Generic arguments for kernels (e.g., alpha, parameters)
+    args: dict = Field(default_factory=dict)
 
     # Original input (for reference only)
     user_input: str = Field(..., description="Original user input")

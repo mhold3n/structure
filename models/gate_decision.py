@@ -17,6 +17,7 @@ class Decision(str, Enum):
     REJECT = "REJECT"
     FALLBACK = "FALLBACK"
     ESCALATE = "ESCALATE"
+    WARN = "WARN"
 
 
 class GateDecision(BaseModel):

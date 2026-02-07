@@ -238,7 +238,13 @@ DOMAIN_KEYWORDS = {
         "histogram",
         "distribution",
         "variance",
+        "variance",
         "standard deviation",
+        "mean",
+        "median",
+        "average",
+        "stdev",
+        "stat",
     ],
 }
 
@@ -347,6 +353,10 @@ def classify_task(request: TaskRequest) -> TaskSpec:
 
     if features["ambiguous_terms"]:
         required_gates.append("ambiguity_gate")
+
+    # Add safety gate for experiment domain
+    if main_domain == "experiment":
+        required_gates.append("experiment_safety_gate")
 
     # Select kernels based on domain
     selected_kernels = []

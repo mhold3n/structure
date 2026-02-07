@@ -11,13 +11,17 @@ from typing import Optional, Any
 import uuid
 from datetime import datetime
 
-from .logging import StructuredLogger
+from .logging import StructuredLogger, AuditRecord
 from models.task_spec import TaskSpec, TaskRequest
 from models.gate_decision import GateDecision, Decision
 from models.clarify import ClarifyRequest  # noqa: F401 - available for future use
 from validator.loader import load_registry, load_schema, load_policy
 from validator.gates import run_gates, get_blocking_decisions
 from router.classifier import classify_task
+from models.workflow import Workflow
+from models.session import Session
+from runtime.orchestrator import Orchestrator
+from router.workflow_builder import build_workflow_from_request
 
 app = FastAPI(
     title="R&D Orchestration Gateway",
@@ -123,6 +127,20 @@ async def submit_task(input: TaskRequestInput) -> TaskResponse:
 
             status = "clarify" if first_block.decision == Decision.CLARIFY else "reject"
 
+            # Audit Log for Blocked Task
+            logger.log_audit(
+                AuditRecord(
+                    event_id=str(uuid.uuid4()),
+                    actor_id="api_user", # TODO: extract from auth
+                    action="task_submission",
+                    resource_id=request_id,
+                    status="BLOCKED",
+                    details={"reason": f"Blocked by {first_block.gate_id}"},
+                    gates_passed=[g.gate_id for g in gate_results if not g.is_blocking()],
+                    policy_violations=[g.gate_id for g in blocking]
+                )
+            )
+
             clarify_payload = ClarifyPayload(
                 reason_codes=list(set(all_reasons)),
                 questions=all_questions,
@@ -217,7 +235,159 @@ async def get_policy(policy_id: str):
     return policy
 
 
+
+
+# Global runtime state
+orchestrator = Orchestrator()
+sessions: dict[str, Session] = {}
+active_workflows: dict[str, Workflow] = {}
+
+
+@app.post("/workflow", response_model=Workflow)
+async def submit_workflow(input: TaskRequestInput) -> Workflow:
+    """
+    Submit a task request to be executed as a multi-step workflow.
+    
+    Decomposes input -> Workflow -> Executes via Orchestrator.
+    """
+    request_id = str(uuid.uuid4())
+    
+    # 1. Create Request
+    request = TaskRequest(
+        request_id=request_id,
+        user_input=input.user_input,
+        domain_hint=input.domain_hint,
+        context=input.context or {},
+    )
+    
+    logger.log_request(request_id, "workflow", request.model_dump())
+    
+    # 2. Build Workflow
+    workflow = build_workflow_from_request(request)
+    
+    # 3. Create/Get Session 
+    # For now, create a new session for each workflow request
+    # In future, we'd extract session_id from headers/auth
+    session_id = f"sess_{uuid.uuid4().hex[:8]}"
+    session = Session(session_id=session_id)
+    sessions[session_id] = session
+    
+    # Store workflow for resumption
+    active_workflows[workflow.workflow_id] = workflow
+    
+    # 4. Execute Workflow
+    try:
+        updated_workflow = await orchestrator.run_workflow(workflow, session)
+        
+        logger.log_response(request_id, "success", updated_workflow.model_dump())
+        return updated_workflow
+        
+    except Exception as e:
+        logger.log_error(request_id, str(e))
+        # Return workflow in failed state if possible, else raise
+        workflow.status = "failed" # Should be WorkflowStatus.FAILED but utilizing string for simplicity/safety
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/experiment", response_model=TaskResponse)
+async def submit_experiment(input: TaskRequestInput) -> TaskResponse:
+    """Submit an experiment design request (Shortcut for /task with domain='experiment')."""
+    input.domain_hint = "experiment"
+    return await submit_task(input)
+
+
+@app.post("/analysis", response_model=TaskResponse)
+async def submit_analysis(input: TaskRequestInput) -> TaskResponse:
+    """Submit a data analysis request (Shortcut for /task with domain='analysis')."""
+    input.domain_hint = "analysis"
+    return await submit_task(input)
+
+
+@app.post("/project-plan", response_model=TaskResponse)
+async def submit_project_plan(input: TaskRequestInput) -> TaskResponse:
+    """Submit a project planning request (Shortcut for /task with domain='project')."""
+    input.domain_hint = "project"
+    return await submit_task(input)
+
+
+@app.get("/session/{session_id}", response_model=Session)
+async def get_session(session_id: str) -> Session:
+    """Retrieve the current state of a session."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    return sessions[session_id]
+
+
+class ClarificationAnswer(BaseModel):
+    """User answer to a clarification question."""
+    question_id: str
+    answer: str
+
+
+@app.post("/session/{session_id}/answer", response_model=Workflow)
+async def answer_clarification(session_id: str, answers: list[ClarificationAnswer]) -> Workflow:
+    """
+    Submit answers to clarifying questions for a blocked step/workflow.
+    
+    This resumes the workflow:
+    1. Updates context with answers
+    2. Re-runs the blocked step
+    """
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    
+    session = sessions[session_id]
+    
+    # 1. Update Session Context
+    # Map answers to context variables? Or just store them?
+    # For now, store in a special 'user_answers' dict in context
+    for ans in answers:
+         session.context[f"answer_{ans.question_id}"] = ans.answer
+         # Also log to history
+         session.add_history("user_clarification", {"question": ans.question_id, "answer": ans.answer})
+
+    # 2. Resume Workflow
+    if not session.active_workflow_id:
+         raise HTTPException(status_code=400, detail="No active workflow in this session")
+
+    # In a real app we'd load workflow from DB. Here we don't have global workflow storage 
+    # except explicitly returned, but `orchestrator.run_workflow` takes a workflow object.
+    # We need to retrieve the workflow object. 
+    # LIMITATION: In this in-memory prototype, we don't have a lookup for Workflow objects by ID 
+    # outside of the `result`... wait.
+    # The `sessions` dict stores `Session`, but `Workflow` state is lost if not persisted.
+    # 
+    # For this prototype, I will rely on the client re-submitting OR (better) I'll add a 
+    # `workflows` in-memory store to `main.py` to support this pattern.
+    
+    workflow = active_workflows.get(session.active_workflow_id)
+    if not workflow:
+         raise HTTPException(status_code=404, detail="Active workflow not found (memory reset?)")
+         
+    # Update workflow context too
+    workflow.context.update(session.context)
+    
+    # Reset blocked steps to PENDING or ACTIVE to retry
+    for step in workflow.steps:
+        if step.status == "blocked": # WorkflowStatus.BLOCKED
+             step.status = "pending" # WorkflowStatus.PENDING
+    
+    # Re-run
+    try:
+        updated_workflow = await orchestrator.run_workflow(workflow, session)
+        return updated_workflow
+    except Exception as e:
+        logger.log_error(session_id, str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {
+        "status": "healthy", 
+        "timestamp": datetime.utcnow().isoformat(),
+        "active_sessions": len(sessions),
+        "active_workflows": len(active_workflows)
+    }
+

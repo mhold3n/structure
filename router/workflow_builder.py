@@ -11,6 +11,7 @@ from typing import List
 from models.task_spec import TaskRequest, TaskSpec
 from models.workflow import Workflow, WorkflowStep, WorkflowStatus
 from router.llm_extractor import extract_spec, ExtractionConfig, ExtractionMode
+from router.classifier import classify_task
 
 
 class WorkflowBuilder:
@@ -37,28 +38,45 @@ class WorkflowBuilder:
         for i, step_text in enumerate(steps):
             step_id = f"step_{i + 1}_{uuid.uuid4().hex[:6]}"
 
-            # Extract spec for this step
-            # We treat each step as a sub-request
-            # Note: This is synchronous and sequential for now
-            spec_result = extract_spec(step_text)
+            # 1. Classify step to get domain and kernels (Deterministic)
+            step_request = TaskRequest(
+                request_id=step_id,
+                user_input=step_text,
+                context=request.context,
+            )
+            try:
+                classified_spec = classify_task(step_request)
+                spec_data = classified_spec.model_dump()
+            except Exception:
+                # Fallback if classification fails
+                spec_data = {}
 
-            # Ensure spec dict is valid for TaskSpec if possible
-            spec_data = spec_result.spec
-            task_spec = None
-
-            if spec_data:
-                # Inject necessary fields for TaskSpec validation
-                if "request_id" not in spec_data:
-                    spec_data["request_id"] = step_id
-                if "user_input" not in spec_data:
-                    spec_data["user_input"] = step_text
-
-                try:
-                    task_spec = TaskSpec(**spec_data)
-                except Exception:
-                    # If validation fails, leave spec as None or handle gracefully
-                    # For now we just don't attach the invalid spec
+            # 2. Extract parameters using LLM (D2 Determinism)
+            # This fills in 'args' and other metadata
+            extract_result = extract_spec(step_text)
+            
+            if extract_result.success and extract_result.spec:
+                extracted_data = extract_result.spec
+                # Merge parameters into args
+                if "parameters" in extracted_data:
+                    spec_data["args"] = extracted_data["parameters"]
+                
+                # Merge other fields if missing in classification
+                if "intent" in extracted_data and "intent" not in spec_data:
+                    # TaskSpec doesn't have intent field yet, but might in future
                     pass
+            
+            # 3. Create final merged TaskSpec
+            # Ensure required fields are present
+            if "request_id" not in spec_data:
+                spec_data["request_id"] = step_id
+            if "user_input" not in spec_data:
+                spec_data["user_input"] = step_text
+                
+            try:
+                task_spec = TaskSpec(**spec_data)
+            except Exception:
+                task_spec = None
 
             step = WorkflowStep(
                 step_id=step_id,

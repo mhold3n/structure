@@ -98,6 +98,17 @@ class StatisticsKernel(KernelInterface):
         """Execute with typed KernelInput."""
         operation = input.args.get("operation", "")
 
+        # Infer operation if missing based on arguments
+        if not operation:
+            if "effect_size" in input.args or "power" in input.args:
+                operation = "sample_size"
+            elif "group1" in input.args and "group2" in input.args:
+                operation = "t_test"
+            elif "data" in input.args:
+                operation = "descriptive"
+            elif "x" in input.args and "y" in input.args:
+                operation = "regression"
+
         if operation == "sample_size":
             return self._sample_size(input.args, input.request_id)
         elif operation == "t_test":
@@ -105,6 +116,7 @@ class StatisticsKernel(KernelInterface):
         elif operation == "descriptive":
             return self._descriptive(input.args, input.request_id)
         elif operation == "regression":
+            # Ensure regression checks args too inside
             return self._regression(input.args, input.request_id)
         else:
             return self._make_output(
@@ -360,7 +372,11 @@ class StatisticsKernel(KernelInterface):
 
         operation = args.get("operation")
         if not operation:
-            errors.append("Missing required field: operation")
+            # Check if arguments imply a valid operation
+            if any(k in args for k in ["effect_size", "group1", "data", "x"]):
+                pass # Valid inference possible
+            else:
+                errors.append("Missing required field: operation (and could not infer from args)")
         elif operation not in self.SUPPORTED_OPERATIONS:
             errors.append(f"Unknown operation: {operation}")
 
