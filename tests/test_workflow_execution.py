@@ -99,10 +99,7 @@ async def test_multi_step_independent():
 
     req = TaskRequest(
         request_id="req3",
-        user_input=(
-            "1. Calculate mean of [1,1,1]. "
-            "2. Calculate mean of [2,2,2]."
-        )
+        user_input=("1. Calculate mean of [1,1,1]. 2. Calculate mean of [2,2,2]."),
     )
 
     workflow = build_workflow_from_request(req)

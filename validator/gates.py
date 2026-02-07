@@ -184,8 +184,7 @@ def experiment_safety_gate(spec: TaskSpec) -> GateDecision:
                 reasons.append("IRB_APPROVAL_REQUIRED")
                 required_fields.append("irb_protocol_number")
                 questions.append(
-                    "This appears to involve human subjects. "
-                    "Do you have IRB approval?"
+                    "This appears to involve human subjects. Do you have IRB approval?"
                 )
                 decision = Decision.CLARIFY
 

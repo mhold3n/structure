@@ -101,9 +101,9 @@ class TestKernelInterface:
                 module_path, class_name = impl
                 module = importlib.import_module(module_path)
                 kernel_class = getattr(module, class_name)
-                assert (
-                    kernel_class.kernel_id == kernel_id
-                ), f"Kernel {kernel_id} class has wrong kernel_id"
+                assert kernel_class.kernel_id == kernel_id, (
+                    f"Kernel {kernel_id} class has wrong kernel_id"
+                )
 
 
 class TestFullIntegrity:

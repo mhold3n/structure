@@ -75,9 +75,7 @@ class Orchestrator:
                     resource_id=step.step_id,
                     status="BLOCKED",
                     details={"reason": "Gate Failure", "gates": reasons},
-                    gates_passed=[
-                        g.gate_id for g in gate_decisions if not g.is_blocking()
-                    ],
+                    gates_passed=[g.gate_id for g in gate_decisions if not g.is_blocking()],
                 )
                 logger_struct.log_audit(audit)
 
@@ -158,10 +156,7 @@ class Orchestrator:
                     action="step_execution",
                     resource_id=step.step_id,
                     status="SUCCESS",
-                    details={
-                        "kernel": kernel_id,
-                        "workflow_id": session.active_workflow_id
-                    },
+                    details={"kernel": kernel_id, "workflow_id": session.active_workflow_id},
                     gates_passed=[g.gate_id for g in gate_decisions] if gate_decisions else [],
                 )
                 logger_struct.log_audit(audit)
