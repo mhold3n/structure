@@ -1,18 +1,17 @@
 """
 Units Kernel: UCUM-based unit conversion and dimensional analysis.
 
-This is a high-leverage kernel that reduces variance by:
-- Canonicalizing all units to SI
-- Detecting dimensional inconsistencies
-- Providing authoritative conversions
+Uses KernelInput/KernelOutput models.
 """
 
 from typing import Optional
-from .base import KernelInterface, KernelResult, register_kernel
+from datetime import datetime
+
+from models.kernel_io import KernelInput, KernelOutput, Provenance, UnitMetadata
+from .base import KernelInterface, register_kernel
 
 
 # Simplified UCUM conversion factors to SI base units
-# In production, use a proper UCUM library like pint
 UNIT_CONVERSIONS = {
     # Mass (to kg)
     "kg": 1.0,
@@ -72,9 +71,9 @@ UNIT_CONVERSIONS = {
     "hp": 745.7,
     
     # Temperature (special handling needed)
-    "K": 1.0,  # base
-    "Cel": 1.0,  # offset conversion
-    "[degF]": 5/9,  # scale factor only
+    "K": 1.0,
+    "Cel": 1.0,
+    "[degF]": 5/9,
     
     # Density (to kg/m³)
     "kg/m3": 1.0,
@@ -90,21 +89,6 @@ UNIT_CONVERSIONS = {
     "dyn/cm": 1e-3,
 }
 
-# Dimensional signatures (M, L, T, Θ, I, N, J)
-UNIT_DIMENSIONS = {
-    "kg": {"M": 1},
-    "m": {"L": 1},
-    "s": {"T": 1},
-    "K": {"Θ": 1},
-    "N": {"M": 1, "L": 1, "T": -2},
-    "Pa": {"M": 1, "L": -1, "T": -2},
-    "J": {"M": 1, "L": 2, "T": -2},
-    "W": {"M": 1, "L": 2, "T": -3},
-    "kg/m3": {"M": 1, "L": -3},
-    "N/m3": {"M": 1, "L": -2, "T": -2},
-    "N/m": {"M": 1, "T": -2},
-}
-
 
 @register_kernel
 class UnitsKernel(KernelInterface):
@@ -118,34 +102,29 @@ class UnitsKernel(KernelInterface):
     version = "1.0.0"
     determinism_level = "D1"
     
-    def execute(self, inputs: dict) -> KernelResult:
-        """
-        Convert units and check dimensional consistency.
-        
-        Inputs:
-            value: numeric value
-            from_unit: source unit (UCUM or common)
-            to_unit: target unit (UCUM or common)
-            
-        Outputs:
-            converted_value: value in target units
-            si_value: value in SI base units
-            dimensions: dimensional signature
-        """
-        value = inputs.get("value")
-        from_unit = inputs.get("from_unit", "").strip()
-        to_unit = inputs.get("to_unit", "").strip()
+    def execute(self, input: KernelInput) -> KernelOutput:
+        """Execute with typed KernelInput."""
+        return self._convert(input.args, input.request_id)
+    
+    def execute_legacy(self, args: dict) -> KernelOutput:
+        """Legacy interface for backward compatibility."""
+        return self._convert(args, "legacy")
+    
+    def _convert(self, args: dict, request_id: str) -> KernelOutput:
+        """Core conversion logic."""
+        value = args.get("value")
+        from_unit = args.get("from_unit", "").strip()
+        to_unit = args.get("to_unit", "").strip()
         
         # Get conversion factors
         from_factor = UNIT_CONVERSIONS.get(from_unit)
         to_factor = UNIT_CONVERSIONS.get(to_unit)
         
         if from_factor is None:
-            return KernelResult(
-                kernel_id=self.kernel_id,
-                version=self.version,
+            return self._make_output(
+                request_id=request_id,
                 success=False,
-                result=None,
+                error=f"Unknown source unit: {from_unit}",
                 warnings=[f"Unknown source unit: {from_unit}"]
             )
         
@@ -159,9 +138,8 @@ class UnitsKernel(KernelInterface):
             converted_value = si_value
             to_unit = self._get_si_unit(from_unit)
         
-        return KernelResult(
-            kernel_id=self.kernel_id,
-            version=self.version,
+        return self._make_output(
+            request_id=request_id,
             success=True,
             result={
                 "original_value": value,
@@ -170,33 +148,29 @@ class UnitsKernel(KernelInterface):
                 "converted_unit": to_unit,
                 "si_value": si_value,
             },
-            units_metadata={
-                "from_factor": from_factor,
-                "to_factor": to_factor,
-            },
-            provenance={
-                "conversion_source": "internal_table",
-                "determinism": "D1"
-            }
+            units_metadata=UnitMetadata(
+                input_units={"value": from_unit},
+                output_units={"value": to_unit},
+                conversions_applied=[f"{from_unit} → {to_unit}"]
+            )
         )
     
-    def validate_inputs(self, inputs: dict) -> tuple[bool, list[str]]:
+    def validate_args(self, args: dict) -> tuple[bool, list[str]]:
         """Validate inputs for unit conversion."""
         errors = []
         
-        if "value" not in inputs:
+        if "value" not in args:
             errors.append("Missing required field: value")
-        elif not isinstance(inputs["value"], (int, float)):
+        elif not isinstance(args["value"], (int, float)):
             errors.append("value must be numeric")
         
-        if "from_unit" not in inputs:
+        if "from_unit" not in args:
             errors.append("Missing required field: from_unit")
         
         return (len(errors) == 0, errors)
     
     def _get_si_unit(self, unit: str) -> str:
         """Get the SI base unit for a given unit."""
-        # Simplified mapping
         si_units = {
             "kg": "kg", "g": "kg", "mg": "kg", "[lb_av]": "kg", "lbm": "kg",
             "m": "m", "cm": "m", "mm": "m", "km": "m", "ft": "m", "[ft_i]": "m",

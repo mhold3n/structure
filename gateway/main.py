@@ -2,6 +2,7 @@
 Gateway: Single auditable entrypoint for R&D Orchestration.
 
 All requests flow through here with structured logging for replayability.
+Uses typed Pydantic models - no untyped dicts crossing boundaries.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -11,14 +12,16 @@ import uuid
 from datetime import datetime
 
 from .logging import StructuredLogger
+from models.task_spec import TaskSpec, TaskRequest
+from models.gate_decision import GateDecision, Decision
 from validator.loader import load_registry, load_schema, load_policy
-from validator.gates import run_gates
+from validator.gates import run_gates, get_blocking_decisions
 from router.classifier import classify_task
 
 app = FastAPI(
     title="R&D Orchestration Gateway",
     description="Deterministic Kernels + LLM Interface",
-    version="0.1.0"
+    version="0.2.0"
 )
 
 logger = StructuredLogger("gateway")
@@ -26,10 +29,9 @@ logger = StructuredLogger("gateway")
 
 # --- Request/Response Models ---
 
-class TaskRequest(BaseModel):
-    """Incoming task request from LLM or user."""
-    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_input: str
+class TaskRequestInput(BaseModel):
+    """Incoming task request from API."""
+    user_input: str = Field(..., min_length=1)
     domain_hint: Optional[str] = None
     context: Optional[dict[str, Any]] = None
 
@@ -38,89 +40,108 @@ class TaskResponse(BaseModel):
     """Response to a task request."""
     request_id: str
     status: str  # "success" | "clarify" | "reject" | "error"
+    spec: Optional[dict] = None
     result: Optional[Any] = None
     gate_decisions: Optional[list[dict]] = None
     required_fields: Optional[list[str]] = None
+    clarifying_questions: Optional[list[str]] = None
     message: Optional[str] = None
 
 
-class KernelRequest(BaseModel):
+class KernelRequestInput(BaseModel):
     """Direct kernel invocation request."""
     kernel_id: str
     version: Optional[str] = None
-    inputs: dict[str, Any]
+    args: dict[str, Any] = Field(default_factory=dict)
 
 
 # --- Routes ---
 
 @app.post("/task", response_model=TaskResponse)
-async def submit_task(request: TaskRequest) -> TaskResponse:
+async def submit_task(input: TaskRequestInput) -> TaskResponse:
     """
     Submit a task for processing.
     
-    Flow: classify → validate → dispatch to kernel → format response
+    Flow: TaskRequest → classify → TaskSpec → validate → dispatch
     """
-    logger.log_request(request.request_id, "task", request.model_dump())
+    request_id = str(uuid.uuid4())
+    
+    # Create typed TaskRequest
+    request = TaskRequest(
+        request_id=request_id,
+        user_input=input.user_input,
+        domain_hint=input.domain_hint,
+        context=input.context or {}
+    )
+    
+    logger.log_request(request_id, "task", request.model_dump())
     
     try:
-        # 1. Classify the task
-        task_plan = classify_task(request.user_input, request.domain_hint)
-        logger.log_event(request.request_id, "classified", task_plan)
+        # 1. Classify into validated TaskSpec
+        spec: TaskSpec = classify_task(request)
+        logger.log_event(request_id, "classified", spec.model_dump())
         
         # 2. Run validation gates
-        gate_results = run_gates(task_plan, request.model_dump())
+        gate_results: list[GateDecision] = run_gates(spec)
+        blocking = get_blocking_decisions(gate_results)
         
-        # Check for CLARIFY or REJECT
-        for gate in gate_results:
-            if gate["decision"] == "REJECT":
-                return TaskResponse(
-                    request_id=request.request_id,
-                    status="reject",
-                    gate_decisions=gate_results,
-                    message=f"Rejected by {gate['gate_id']}: {gate['reasons']}"
-                )
-            if gate["decision"] == "CLARIFY":
-                return TaskResponse(
-                    request_id=request.request_id,
-                    status="clarify",
-                    gate_decisions=gate_results,
-                    required_fields=gate.get("required_fields", []),
-                    message="Clarification needed before proceeding"
-                )
+        # Check for blocking decisions
+        if blocking:
+            first_block = blocking[0]
+            
+            # Collect all required fields and questions
+            all_required = []
+            all_questions = []
+            for g in blocking:
+                all_required.extend(g.required_fields)
+                all_questions.extend(g.clarifying_questions)
+            
+            status = "clarify" if first_block.decision == Decision.CLARIFY else "reject"
+            
+            return TaskResponse(
+                request_id=request_id,
+                status=status,
+                spec=spec.model_dump(),
+                gate_decisions=[g.model_dump() for g in gate_results],
+                required_fields=list(set(all_required)),
+                clarifying_questions=all_questions,
+                message=f"Blocked by {first_block.gate_id}: {first_block.reasons}"
+            )
         
-        # 3. Dispatch to kernel (placeholder for now)
+        # 3. All gates passed - dispatch to kernel (placeholder)
         result = {
-            "task_plan": task_plan,
             "gates_passed": True,
+            "selected_kernels": spec.selected_kernels,
             "kernel_result": "TODO: implement kernel dispatch"
         }
         
-        logger.log_response(request.request_id, "success", result)
+        logger.log_response(request_id, "success", result)
         return TaskResponse(
-            request_id=request.request_id,
+            request_id=request_id,
             status="success",
+            spec=spec.model_dump(),
             result=result,
-            gate_decisions=gate_results
+            gate_decisions=[g.model_dump() for g in gate_results]
         )
         
     except Exception as e:
-        logger.log_error(request.request_id, str(e))
+        logger.log_error(request_id, str(e))
         return TaskResponse(
-            request_id=request.request_id,
+            request_id=request_id,
             status="error",
             message=str(e)
         )
 
 
 @app.post("/kernel/{kernel_id}")
-async def invoke_kernel(kernel_id: str, request: KernelRequest):
+async def invoke_kernel(kernel_id: str, input: KernelRequestInput):
     """
     Directly invoke a registered kernel.
     
     Bypasses routing but still runs validation gates.
     """
     request_id = str(uuid.uuid4())
-    logger.log_request(request_id, f"kernel/{kernel_id}", request.model_dump())
+    logger.log_request(request_id, f"kernel/{kernel_id}", input.model_dump())
     
     registry = load_registry()
     kernel_entry = next(
@@ -131,14 +152,13 @@ async def invoke_kernel(kernel_id: str, request: KernelRequest):
     if not kernel_entry:
         raise HTTPException(status_code=404, detail=f"Kernel {kernel_id} not found")
     
-    # TODO: Validate inputs against kernel schema
-    # TODO: Dispatch to kernel implementation
+    # TODO: Create KernelInput, validate, dispatch
     
     return {
         "request_id": request_id,
         "kernel_id": kernel_id,
         "status": "success",
-        "result": "TODO: implement kernel dispatch"
+        "result": "TODO: implement kernel dispatch with KernelInput model"
     }
 
 

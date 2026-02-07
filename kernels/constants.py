@@ -1,18 +1,18 @@
 """
 Constants Kernel: Authoritative physical constants table.
 
-Provides definitive values with provenance to prevent
-confusion (e.g., specific weight vs density).
+Uses KernelInput/KernelOutput models.
 """
 
 from typing import Optional
-from .base import KernelInterface, KernelResult, register_kernel
+from datetime import datetime
+
+from models.kernel_io import KernelInput, KernelOutput, Provenance
+from .base import KernelInterface, register_kernel
 
 
 # Authoritative physical constants with provenance
-# Values from CODATA 2018 and standard references
 PHYSICAL_CONSTANTS = {
-    # Fundamental constants
     "speed_of_light": {
         "value": 299792458.0,
         "unit": "m/s",
@@ -48,8 +48,6 @@ PHYSICAL_CONSTANTS = {
         "source": "CODATA 2018 (exact)",
         "symbol": "N_A"
     },
-    
-    # Standard Earth conditions
     "standard_gravity": {
         "value": 9.80665,
         "unit": "m/s2",
@@ -66,8 +64,6 @@ PHYSICAL_CONSTANTS = {
         "symbol": "atm",
         "aliases": ["atmospheric pressure", "1 atm"]
     },
-    
-    # Water properties at standard conditions (20°C, 1 atm)
     "water_density_20C": {
         "value": 998.2,
         "unit": "kg/m3",
@@ -97,8 +93,6 @@ PHYSICAL_CONSTANTS = {
         "note": "At 20°C against air",
         "disambiguation": "This is SURFACE TENSION (N/m), not weight density"
     },
-    
-    # Air properties at standard conditions (20°C, 1 atm)  
     "air_density_20C": {
         "value": 1.204,
         "unit": "kg/m3",
@@ -108,8 +102,6 @@ PHYSICAL_CONSTANTS = {
         "aliases": ["density of air", "air density"],
         "note": "At 20°C and 1 atm, dry air"
     },
-    
-    # Gas constants
     "universal_gas_constant": {
         "value": 8.314462618,
         "unit": "J/(mol·K)",
@@ -134,7 +126,6 @@ class ConstantsKernel(KernelInterface):
     """
     Physical constants lookup kernel.
     
-    Provides authoritative values with provenance.
     Determinism level: D2 (full output determinism)
     """
     
@@ -142,102 +133,78 @@ class ConstantsKernel(KernelInterface):
     version = "1.0.0"
     determinism_level = "D2"
     
-    def execute(self, inputs: dict) -> KernelResult:
-        """
-        Look up a physical constant.
-        
-        Inputs:
-            constant_id: ID of the constant to look up
-            or
-            search: Alias or description to search for
-            
-        Outputs:
-            constant data with provenance
-        """
-        constant_id = inputs.get("constant_id")
-        search_term = inputs.get("search", "").lower()
+    def execute(self, input: KernelInput) -> KernelOutput:
+        """Execute with typed KernelInput."""
+        return self._lookup(input.args, input.request_id)
+    
+    def execute_legacy(self, args: dict) -> KernelOutput:
+        """Legacy interface for backward compatibility."""
+        return self._lookup(args, "legacy")
+    
+    def _lookup(self, args: dict, request_id: str) -> KernelOutput:
+        """Core lookup logic."""
+        constant_id = args.get("constant_id")
+        search_term = args.get("search", "").lower()
         
         if constant_id:
-            # Direct lookup
             constant = PHYSICAL_CONSTANTS.get(constant_id)
             if constant:
-                return KernelResult(
-                    kernel_id=self.kernel_id,
-                    version=self.version,
+                return self._make_output(
+                    request_id=request_id,
                     success=True,
-                    result={
-                        "constant_id": constant_id,
-                        **constant
-                    },
-                    provenance={
-                        "source": constant.get("source"),
-                        "determinism": "D2"
-                    }
+                    result={"constant_id": constant_id, **constant}
                 )
             else:
-                return KernelResult(
-                    kernel_id=self.kernel_id,
-                    version=self.version,
+                return self._make_output(
+                    request_id=request_id,
                     success=False,
-                    result=None,
+                    error=f"Unknown constant: {constant_id}",
                     warnings=[f"Unknown constant: {constant_id}"]
                 )
         
         elif search_term:
-            # Search by alias
             matches = []
             for cid, cdata in PHYSICAL_CONSTANTS.items():
                 aliases = cdata.get("aliases", [])
                 if (search_term in cid.lower() or 
                     any(search_term in a.lower() for a in aliases)):
-                    matches.append({
-                        "constant_id": cid,
-                        **cdata
-                    })
+                    matches.append({"constant_id": cid, **cdata})
             
             if len(matches) == 1:
-                return KernelResult(
-                    kernel_id=self.kernel_id,
-                    version=self.version,
+                return self._make_output(
+                    request_id=request_id,
                     success=True,
-                    result=matches[0],
-                    provenance={"determinism": "D2"}
+                    result=matches[0]
                 )
             elif len(matches) > 1:
-                # Multiple matches - disambiguation needed
-                return KernelResult(
-                    kernel_id=self.kernel_id,
-                    version=self.version,
+                return self._make_output(
+                    request_id=request_id,
                     success=False,
                     result={"candidates": matches},
                     warnings=["Multiple constants match. Disambiguation required."]
                 )
             else:
-                return KernelResult(
-                    kernel_id=self.kernel_id,
-                    version=self.version,
+                return self._make_output(
+                    request_id=request_id,
                     success=False,
-                    result=None,
+                    error=f"No constants found matching: {search_term}",
                     warnings=[f"No constants found matching: {search_term}"]
                 )
         
         else:
-            return KernelResult(
-                kernel_id=self.kernel_id,
-                version=self.version,
+            return self._make_output(
+                request_id=request_id,
                 success=False,
-                result=None,
+                error="Either constant_id or search must be provided",
                 warnings=["Either constant_id or search must be provided"]
             )
     
-    def validate_inputs(self, inputs: dict) -> tuple[bool, list[str]]:
+    def validate_args(self, args: dict) -> tuple[bool, list[str]]:
         """Validate inputs for constants lookup."""
-        if "constant_id" not in inputs and "search" not in inputs:
+        if "constant_id" not in args and "search" not in args:
             return (False, ["Either constant_id or search must be provided"])
         return (True, [])
     
     def get_envelope(self) -> dict:
         """Return list of available constants."""
-        return {
-            "available_constants": list(PHYSICAL_CONSTANTS.keys())
-        }
+        return {"available_constants": list(PHYSICAL_CONSTANTS.keys())}

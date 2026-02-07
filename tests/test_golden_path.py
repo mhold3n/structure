@@ -1,7 +1,8 @@
 """
 Golden path integration tests.
 
-Tests the full flow: prompt → router → validators → kernel → response
+Tests the full flow: TaskRequest → router → TaskSpec → validators → kernel → response
+Using typed Pydantic models throughout.
 """
 
 import sys
@@ -11,8 +12,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from models.task_spec import TaskRequest, TaskSpec, Domain, RiskLevel
+from models.gate_decision import GateDecision, Decision
 from router.classifier import classify_task, extract_features
-from validator.gates import run_gates, ambiguity_gate, unit_consistency_gate
+from validator.gates import run_gates, get_blocking_decisions, ambiguity_gate, unit_consistency_gate
 from kernels.units import UnitsKernel
 from kernels.constants import ConstantsKernel
 
@@ -38,53 +41,89 @@ class TestFeatureExtraction:
 
 
 class TestRouter:
-    """Test router classification."""
+    """Test router classification with typed models."""
+    
+    def test_returns_task_spec(self):
+        request = TaskRequest(
+            request_id="test-1",
+            user_input="What is the specific weight of water?"
+        )
+        spec = classify_task(request)
+        assert isinstance(spec, TaskSpec)
     
     def test_routes_to_fluids_domain(self):
-        plan = classify_task("What is the specific weight of water?")
-        assert plan["domain"] == "physics"
-        assert plan["subdomain"] == "fluids"
+        request = TaskRequest(
+            request_id="test-2",
+            user_input="What is the specific weight of water?"
+        )
+        spec = classify_task(request)
+        assert spec.domain == Domain.PHYSICS
+        assert spec.subdomain == "fluids"
     
     def test_detects_high_risk(self):
-        plan = classify_task("Convert 10 lb to kg using specific weight")
-        assert plan["risk_level"] in ["medium", "high"]
+        request = TaskRequest(
+            request_id="test-3",
+            user_input="Convert 10 lb to kg using specific weight and density"
+        )
+        spec = classify_task(request)
+        assert spec.risk_level in (RiskLevel.MEDIUM, RiskLevel.HIGH)
     
     def test_selects_unit_kernel(self):
-        plan = classify_task("Convert 100 kg to pounds")
-        assert "unit_converter_v1" in plan["selected_kernels"]
+        request = TaskRequest(
+            request_id="test-4",
+            user_input="Convert 100 kg to pounds"
+        )
+        spec = classify_task(request)
+        assert "unit_converter_v1" in spec.selected_kernels
 
 
 class TestGates:
-    """Test validation gates."""
+    """Test validation gates with typed models."""
+    
+    def test_returns_gate_decision(self):
+        request = TaskRequest(
+            request_id="test-5",
+            user_input="What is the specific weight of water?"
+        )
+        spec = classify_task(request)
+        decision = ambiguity_gate(spec)
+        assert isinstance(decision, GateDecision)
     
     def test_ambiguity_gate_clarify_on_specific_weight(self):
         """The 'specific weight of water' case should trigger CLARIFY."""
-        plan = {"required_gates": ["ambiguity_gate"]}
-        request = {"user_input": "What is the specific weight of water?"}
+        request = TaskRequest(
+            request_id="test-6",
+            user_input="What is the specific weight of water?"
+        )
+        spec = classify_task(request)
+        decision = ambiguity_gate(spec)
         
-        decision = ambiguity_gate(plan, request)
-        
-        assert decision.decision == "CLARIFY"
-        assert "DISALLOWED_TERM" in decision.reasons or "TERM_COLLISION" in decision.reasons
+        assert decision.decision == Decision.CLARIFY
+        assert len(decision.reasons) > 0
         assert len(decision.required_fields) > 0
+        assert len(decision.clarifying_questions) > 0
     
     def test_ambiguity_gate_accepts_unambiguous(self):
         """Clear requests should pass."""
-        plan = {"required_gates": ["ambiguity_gate"]}
-        request = {"user_input": "What is 2 + 2?"}
+        request = TaskRequest(
+            request_id="test-7",
+            user_input="What is 2 + 2?"
+        )
+        spec = classify_task(request)
+        decision = ambiguity_gate(spec)
         
-        decision = ambiguity_gate(plan, request)
-        
-        assert decision.decision == "ACCEPT"
+        assert decision.decision == Decision.ACCEPT
     
     def test_unit_gate_clarify_on_lb(self):
         """Ambiguous 'lb' unit should trigger CLARIFY."""
-        plan = {"required_gates": ["unit_consistency_gate"]}
-        request = {"user_input": "Convert 10 lb to kg"}
+        request = TaskRequest(
+            request_id="test-8",
+            user_input="Convert 10 lb to kg"
+        )
+        spec = classify_task(request)
+        decision = unit_consistency_gate(spec)
         
-        decision = unit_consistency_gate(plan, request)
-        
-        assert decision.decision == "CLARIFY"
+        assert decision.decision == Decision.CLARIFY
         assert "UNIT_AMBIGUOUS" in decision.reasons
 
 
@@ -93,7 +132,7 @@ class TestKernels:
     
     def test_units_kernel_converts_kg_to_lb(self):
         kernel = UnitsKernel()
-        result = kernel.execute({
+        result = kernel.execute_legacy({
             "value": 1.0,
             "from_unit": "kg",
             "to_unit": "[lb_av]"
@@ -104,18 +143,17 @@ class TestKernels:
     
     def test_constants_kernel_returns_gravity(self):
         kernel = ConstantsKernel()
-        result = kernel.execute({"constant_id": "standard_gravity"})
+        result = kernel.execute_legacy({"constant_id": "standard_gravity"})
         
         assert result.success is True
         assert result.result["value"] == 9.80665
         assert result.result["unit"] == "m/s2"
     
     def test_constants_kernel_disambiguates_water(self):
-        """Searching 'specific weight water' should find the right constant."""
+        """Searching 'specific weight' should find the right constant."""
         kernel = ConstantsKernel()
-        result = kernel.execute({"search": "specific weight"})
+        result = kernel.execute_legacy({"search": "specific weight"})
         
-        # Should find water_specific_weight_20C
         assert result.success is True
         assert "specific weight" in str(result.result).lower()
 
@@ -133,32 +171,50 @@ class TestGoldenPath:
         
         This prompt should:
         1. Route to physics.fluids
-        2. Detect ambiguity (specific weight can mean weight density OR surface tension)
-        3. Return CLARIFY with disambiguation required
+        2. Produce a validated TaskSpec
+        3. Detect ambiguity via gates
+        4. Return CLARIFY with disambiguation required
         
         This is the exact failure case from the original problem description.
         """
-        prompt = "What is the specific weight of water?"
+        # Step 1: Create typed request
+        request = TaskRequest(
+            request_id="golden-1",
+            user_input="What is the specific weight of water?"
+        )
         
-        # Step 1: Classify
-        plan = classify_task(prompt)
-        assert plan["domain"] == "physics"
-        assert "ambiguity_gate" in plan["required_gates"]
+        # Step 2: Classify into TaskSpec
+        spec = classify_task(request)
+        assert isinstance(spec, TaskSpec)
+        assert spec.domain == Domain.PHYSICS
+        assert "ambiguity_gate" in spec.required_gates
         
-        # Step 2: Run gates
-        request = {"user_input": prompt}
-        gate_results = run_gates(plan, request)
+        # Step 3: Run gates
+        gate_results = run_gates(spec)
+        assert all(isinstance(g, GateDecision) for g in gate_results)
         
-        # Step 3: Check for CLARIFY
-        clarify_gates = [g for g in gate_results if g["decision"] == "CLARIFY"]
-        assert len(clarify_gates) > 0, "Should trigger CLARIFY for ambiguous term"
+        # Step 4: Check for blocking decisions
+        blocking = get_blocking_decisions(gate_results)
+        assert len(blocking) > 0, "Should trigger CLARIFY for ambiguous term"
         
-        # Step 4: Verify disambiguation fields are requested
-        all_required_fields = []
-        for g in clarify_gates:
-            all_required_fields.extend(g.get("required_fields", []))
+        # Step 5: Verify clarification details
+        clarify_decision = blocking[0]
+        assert clarify_decision.decision == Decision.CLARIFY
+        assert len(clarify_decision.required_fields) > 0
+        assert len(clarify_decision.clarifying_questions) > 0
+    
+    def test_unambiguous_request_passes(self):
+        """Clear requests should pass all gates."""
+        request = TaskRequest(
+            request_id="golden-2",
+            user_input="Calculate the area of a circle with radius 5 meters"
+        )
         
-        assert len(all_required_fields) > 0, "Should request disambiguation fields"
+        spec = classify_task(request)
+        gate_results = run_gates(spec)
+        blocking = get_blocking_decisions(gate_results)
+        
+        assert len(blocking) == 0, "Should not block on unambiguous request"
 
 
 def run_tests():

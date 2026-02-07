@@ -21,7 +21,7 @@ dependencies = [
 dev = ["pytest>=8.0", "ruff>=0.2.0", "jsonschema>=4.21"]
 
 [tool.setuptools.packages.find]
-include = ["gateway*", "router*", "validator*", "kernels*"]
+include = ["gateway*", "router*", "validator*", "kernels*", "models*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

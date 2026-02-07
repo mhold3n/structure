@@ -1,28 +1,15 @@
 """
 Base: Kernel interface and registry.
 
-All kernels must implement the KernelInterface.
+All kernels must implement KernelInterface.
+All kernels accept KernelInput and return KernelOutput.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, asdict
-from typing import Any, Optional
+from typing import Optional
+from datetime import datetime
 
-
-@dataclass
-class KernelResult:
-    """Standardized kernel output."""
-    kernel_id: str
-    version: str
-    success: bool
-    result: Any
-    units_metadata: Optional[dict] = None
-    provenance: Optional[dict] = None
-    uncertainty: Optional[float] = None
-    warnings: Optional[list[str]] = None
-    
-    def to_dict(self) -> dict:
-        return asdict(self)
+from models.kernel_io import KernelInput, KernelOutput, Provenance, UnitMetadata
 
 
 class KernelInterface(ABC):
@@ -30,8 +17,8 @@ class KernelInterface(ABC):
     Abstract base class for all kernels.
     
     Kernels are deterministic compute units that:
-    - Accept validated, canonical inputs
-    - Produce typed outputs with provenance
+    - Accept validated KernelInput (not raw dicts)
+    - Produce typed KernelOutput with provenance
     - Are stateless (same input → same output)
     """
     
@@ -40,22 +27,22 @@ class KernelInterface(ABC):
     determinism_level: str  # D1, D2, NONE
     
     @abstractmethod
-    def execute(self, inputs: dict) -> KernelResult:
+    def execute(self, input: KernelInput) -> KernelOutput:
         """
-        Execute the kernel with validated inputs.
+        Execute the kernel with validated input.
         
         Args:
-            inputs: Validated input dictionary matching kernel schema
+            input: Validated KernelInput (not raw dict)
             
         Returns:
-            KernelResult with output and metadata
+            KernelOutput with typed result and metadata
         """
         pass
     
     @abstractmethod
-    def validate_inputs(self, inputs: dict) -> tuple[bool, list[str]]:
+    def validate_args(self, args: dict) -> tuple[bool, list[str]]:
         """
-        Validate inputs before execution.
+        Validate the args dict before execution.
         
         Returns:
             (is_valid, error_messages)
@@ -65,6 +52,33 @@ class KernelInterface(ABC):
     def get_envelope(self) -> dict:
         """Return the valid input envelope for this kernel."""
         return {}
+    
+    def _make_output(
+        self,
+        request_id: str,
+        success: bool,
+        result=None,
+        error: str = None,
+        units_metadata: UnitMetadata = None,
+        warnings: list[str] = None
+    ) -> KernelOutput:
+        """Helper to create properly-formed KernelOutput."""
+        return KernelOutput(
+            kernel_id=self.kernel_id,
+            version=self.version,
+            request_id=request_id,
+            success=success,
+            result=result,
+            error=error,
+            units_metadata=units_metadata,
+            provenance=Provenance(
+                kernel_id=self.kernel_id,
+                kernel_version=self.version,
+                determinism=self.determinism_level,
+                timestamp=datetime.utcnow()
+            ),
+            warnings=warnings or []
+        )
 
 
 # Kernel registry (populated by kernel modules)

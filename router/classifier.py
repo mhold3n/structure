@@ -2,34 +2,13 @@
 Router: Deterministic task classification.
 
 Rule-based routing with LLM as tie-breaker only.
-Output is a typed TaskPlan, not freeform text.
+Output is a typed TaskSpec, not freeform dict.
 """
 
 import re
 from typing import Optional
-from dataclasses import dataclass, asdict
 
-
-@dataclass
-class TaskPlan:
-    """Typed output from router - deterministic classification."""
-    domain: str  # physics, chemistry, math, code, general
-    subdomain: Optional[str] = None  # fluids, mechanics, thermo, etc.
-    needs_units: bool = False
-    has_equations: bool = False
-    risk_level: str = "low"  # low, medium, high
-    required_gates: list[str] = None
-    selected_kernels: list[str] = None
-    confidence: float = 1.0
-    
-    def __post_init__(self):
-        if self.required_gates is None:
-            self.required_gates = []
-        if self.selected_kernels is None:
-            self.selected_kernels = []
-    
-    def to_dict(self) -> dict:
-        return asdict(self)
+from models.task_spec import TaskSpec, TaskRequest, Domain, RiskLevel
 
 
 # --- Feature Extraction (Deterministic) ---
@@ -140,36 +119,43 @@ def extract_features(text: str) -> dict:
     }
 
 
-def classify_task(user_input: str, domain_hint: Optional[str] = None) -> dict:
+def classify_task(request: TaskRequest) -> TaskSpec:
     """
-    Classify a task into a typed TaskPlan.
+    Classify a task into a typed TaskSpec.
     
     This is deterministic - same input produces same output.
+    Returns a validated, immutable TaskSpec.
     """
-    features = extract_features(user_input)
+    features = extract_features(request.user_input)
     
     # Determine domain
-    if domain_hint:
-        domain = domain_hint
+    if request.domain_hint:
+        domain_str = request.domain_hint
     elif features["domain_scores"]:
         # Pick highest scoring domain
-        domain = max(features["domain_scores"], key=features["domain_scores"].get)
+        domain_str = max(features["domain_scores"], key=features["domain_scores"].get)
     else:
-        domain = "general"
+        domain_str = "general"
     
     # Split domain into domain/subdomain
-    if "." in domain:
-        main_domain, subdomain = domain.split(".", 1)
+    if "." in domain_str:
+        main_domain, subdomain = domain_str.split(".", 1)
     else:
-        main_domain = domain
+        main_domain = domain_str
         subdomain = None
     
+    # Map to Domain enum
+    try:
+        domain = Domain(main_domain)
+    except ValueError:
+        domain = Domain.GENERAL
+    
     # Determine risk level
-    risk_level = "low"
+    risk_level = RiskLevel.LOW
     if features["ambiguous_terms"]:
-        risk_level = "medium"
+        risk_level = RiskLevel.MEDIUM
     if len(features["ambiguous_terms"]) > 1:
-        risk_level = "high"
+        risk_level = RiskLevel.HIGH
     
     # Determine required gates
     required_gates = ["schema_gate"]  # Always
@@ -193,16 +179,29 @@ def classify_task(user_input: str, domain_hint: Optional[str] = None) -> dict:
         elif subdomain == "thermodynamics":
             selected_kernels.append("thermo_ideal_gas_v1")
     
-    # Build task plan
-    plan = TaskPlan(
-        domain=main_domain,
+    # Build validated TaskSpec (immutable)
+    return TaskSpec(
+        request_id=request.request_id,
+        domain=domain,
         subdomain=subdomain,
         needs_units=bool(features["units_found"]),
         has_equations=features["has_equations"],
         risk_level=risk_level,
         required_gates=required_gates,
         selected_kernels=selected_kernels,
-        confidence=1.0 if domain_hint else 0.8
+        user_input=request.user_input,
+        confidence=1.0 if request.domain_hint else 0.8
     )
-    
-    return plan.to_dict()
+
+
+# Backward compatibility: dict-based API
+def classify_task_dict(user_input: str, domain_hint: Optional[str] = None) -> dict:
+    """Legacy dict-based interface for backward compatibility."""
+    import uuid
+    request = TaskRequest(
+        request_id=str(uuid.uuid4()),
+        user_input=user_input,
+        domain_hint=domain_hint
+    )
+    spec = classify_task(request)
+    return spec.model_dump()
