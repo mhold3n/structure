@@ -138,10 +138,113 @@ DOMAIN_KEYWORDS = {
         "test",
         "implement",
     ],
+    # AI Lab domains
+    "experiment": [
+        "hypothesis",
+        "control group",
+        "treatment group",
+        "randomization",
+        "randomize",
+        "irb",
+        "protocol",
+        "blinding",
+        "double-blind",
+        "cohort",
+        "treatment arm",
+        "placebo",
+        "experimental design",
+        "intervention",
+        "baseline",
+        "outcome measure",
+        "factorial design",
+        "within-subjects",
+        "between-subjects",
+    ],
+    "survey": [
+        "questionnaire",
+        "response rate",
+        "completion rate",
+        "likert",
+        "likert scale",
+        "sample size",
+        "margin of error",
+        "demographics",
+        "survey instrument",
+        "pilot study",
+        "respondent",
+        "non-response",
+        "sampling bias",
+        "stratified sampling",
+        "random sampling",
+        "close-ended",
+        "open-ended",
+    ],
+    "project": [
+        "milestone",
+        "deadline",
+        "gantt",
+        "gantt chart",
+        "dependency",
+        "dependencies",
+        "critical path",
+        "resource allocation",
+        "sprint",
+        "deliverable",
+        "stakeholder",
+        "project plan",
+        "timeline",
+        "work breakdown",
+        "wbs",
+        "task assignment",
+        "project scope",
+        "budget",
+        "risk register",
+    ],
+    "operations": [
+        "workflow",
+        "sop",
+        "standard operating procedure",
+        "escalation",
+        "capacity",
+        "scheduling",
+        "inventory",
+        "logistics",
+        "process improvement",
+        "bottleneck",
+        "throughput",
+        "queue",
+        "shift",
+        "resource planning",
+        "operational efficiency",
+        "kpi",
+        "sla",
+    ],
+    "analysis": [
+        "regression",
+        "p-value",
+        "confidence interval",
+        "correlation",
+        "outlier",
+        "descriptive statistics",
+        "pivot table",
+        "aggregation",
+        "data cleaning",
+        "missing data",
+        "normalization",
+        "statistical significance",
+        "anova",
+        "chi-square",
+        "t-test",
+        "histogram",
+        "distribution",
+        "variance",
+        "standard deviation",
+    ],
 }
 
 # Ambiguous/high-risk terms that require clarification
 AMBIGUOUS_TERMS = [
+    # Physics ambiguities
     "specific weight",
     "weight",
     "pound",
@@ -149,6 +252,16 @@ AMBIGUOUS_TERMS = [
     "gamma",
     "unit weight",
     "density",  # can be confused
+    # Lab ambiguities
+    "response rate",  # survey completion vs API response
+    "sample",  # statistical sample vs biological sample
+    "power",  # statistical power vs electrical power
+    "significance",  # statistical vs practical
+    "control",  # control group vs control variable
+    "effect",  # effect size vs side effect
+    "bias",  # sampling bias vs cognitive bias
+    "error",  # type I/II error vs measurement error
+    "rate",  # rate of change vs response rate
 ]
 
 
@@ -247,6 +360,19 @@ def classify_task(request: TaskRequest) -> TaskSpec:
             selected_kernels.append("mechanics_kinematics_v1")
         elif subdomain == "thermodynamics":
             selected_kernels.append("thermo_ideal_gas_v1")
+
+    # Lab domain kernels
+    elif main_domain == "experiment":
+        selected_kernels.append("experiment_design_v1")
+    elif main_domain == "survey":
+        selected_kernels.append("statistics_v1")
+    elif main_domain == "project":
+        selected_kernels.append("project_mgmt_v1")
+    elif main_domain == "operations":
+        selected_kernels.append("project_mgmt_v1")  # Reuse for ops
+    elif main_domain == "analysis":
+        selected_kernels.append("statistics_v1")
+        selected_kernels.append("data_summary_v1")
 
     # Build validated TaskSpec (immutable)
     return TaskSpec(

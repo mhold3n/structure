@@ -13,11 +13,18 @@ from enum import Enum
 class Domain(str, Enum):
     """Valid domain classifications."""
 
+    # Scientific domains
     PHYSICS = "physics"
     CHEMISTRY = "chemistry"
     MATH = "math"
     CODE = "code"
     GENERAL = "general"
+    # AI Lab domains
+    EXPERIMENT = "experiment"  # experiment design
+    SURVEY = "survey"  # survey research
+    PROJECT = "project"  # project management
+    OPERATIONS = "operations"  # operations planning
+    ANALYSIS = "analysis"  # data analysis
 
 
 class RiskLevel(str, Enum):

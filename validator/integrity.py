@@ -19,13 +19,19 @@ from validator.loader import load_registry, SCHEMAS_DIR, POLICIES_DIR
 # Known kernel implementations
 # Value of None means the kernel is planned but not yet implemented
 KERNEL_IMPLEMENTATIONS = {
+    # Implemented
     "unit_converter_v1": ("kernels.units", "UnitsKernel"),
     "constants_v1": ("kernels.constants", "ConstantsKernel"),
-    # Planned kernels (registered but not yet implemented)
+    # Planned - Physics
     "dimensional_check_v1": None,
     "fluids_statics_v1": None,
     "thermo_ideal_gas_v1": None,
     "mechanics_kinematics_v1": None,
+    # Planned - AI Lab
+    "statistics_v1": None,
+    "experiment_design_v1": None,
+    "project_mgmt_v1": None,
+    "data_summary_v1": None,
 }
 
 
