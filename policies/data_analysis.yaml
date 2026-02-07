@@ -1,0 +1,77 @@
+# Data Analysis Policy
+# Governs data handling and analysis in AI Lab
+
+version: "1.0.0"
+
+# Gate configuration for analysis domain
+gates:
+  enabled:
+    - data_quality_v1
+    - lab_ambiguity_v1
+
+  execution_order:
+    - lab_ambiguity_v1
+    - data_quality_v1
+
+# Data quality requirements
+data_quality:
+  minimum_requirements:
+    missing_threshold_pct: 20 # Max 20% missing data
+    duplicate_check: true
+    type_validation: true
+
+  preprocessing:
+    document_transformations: true
+    preserve_raw_data: true
+    version_control: true
+
+# Analysis standards
+analysis_standards:
+  statistical_significance:
+    default_alpha: 0.05
+    multiple_comparison_correction: true
+    corrections:
+      - bonferroni
+      - holm
+      - fdr
+
+  effect_sizes:
+    always_report: true
+    preferred_metrics:
+      - cohens_d
+      - r_squared
+      - odds_ratio
+
+  confidence_intervals:
+    default_level: 0.95
+    bootstrap_samples: 1000
+
+# Reproducibility
+reproducibility:
+  determinism_level: D1
+
+  required_for_analysis:
+    - random_seed
+    - software_version
+    - data_hash
+
+  output_formats:
+    - json # Primary
+    - csv # For tabular results
+
+# Privacy and security
+privacy:
+  pii_detection: true
+  anonymization_required: true
+
+  sensitive_fields:
+    - name
+    - email
+    - phone
+    - ssn
+    - address
+    - ip_address
+
+  handling:
+    log_access: true
+    encrypt_at_rest: true

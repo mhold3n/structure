@@ -1,0 +1,85 @@
+# Lab Experiment Policy
+# Governs experiment design and execution in AI Lab
+
+version: "1.0.0"
+
+# Gate configuration for experiment domain
+gates:
+  enabled:
+    - experiment_safety_v1
+    - lab_ambiguity_v1
+
+  execution_order:
+    - lab_ambiguity_v1 # Clarify terminology first
+    - experiment_safety_v1 # Then check safety
+
+# Experiment design requirements
+experiment_requirements:
+  control_group:
+    required: true
+    exceptions:
+      - observational_study
+      - descriptive_study
+
+  sample_size:
+    require_justification: true
+    minimum: 10
+    power_threshold: 0.80
+
+  randomization:
+    preferred_method: block_randomization
+    seed_required: true # For reproducibility
+
+# Human subjects research
+human_subjects:
+  irb_approval_required: true
+  consent_documentation: true
+
+  risk_levels:
+    minimal:
+      examples:
+        - surveys
+        - observations
+        - secondary_data
+      requirements:
+        - informed_consent
+
+    moderate:
+      examples:
+        - interviews
+        - behavioral_experiments
+      requirements:
+        - informed_consent
+        - risk_disclosure
+        - debriefing_protocol
+
+    high:
+      examples:
+        - medical_interventions
+        - clinical_trials
+      requirements:
+        - full_irb_review
+        - monitoring_plan
+        - adverse_event_protocol
+
+# Reproducibility standards
+reproducibility:
+  required_documentation:
+    - protocol
+    - analysis_plan
+    - randomization_seed
+    - software_versions
+
+  determinism_level: D1 # Seeded randomization
+
+  audit_trail:
+    log_all_decisions: true
+    preserve_intermediate_results: true
+
+# Budget and resource constraints
+resources:
+  max_participants_per_study: 1000
+  max_duration_days: 365
+  approval_required_above:
+    participants: 100
+    duration_days: 30
