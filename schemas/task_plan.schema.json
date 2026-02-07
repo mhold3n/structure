@@ -1,0 +1,65 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "task_plan.schema.json",
+    "title": "TaskPlan",
+    "description": "Router output - deterministic task classification",
+    "type": "object",
+    "properties": {
+        "domain": {
+            "type": "string",
+            "enum": [
+                "physics",
+                "chemistry",
+                "math",
+                "code",
+                "general"
+            ],
+            "description": "Primary domain classification"
+        },
+        "subdomain": {
+            "type": "string",
+            "description": "Subdomain within primary domain (e.g., fluids, mechanics)"
+        },
+        "needs_units": {
+            "type": "boolean",
+            "description": "Whether the task involves physical units"
+        },
+        "has_equations": {
+            "type": "boolean",
+            "description": "Whether equations were detected in input"
+        },
+        "risk_level": {
+            "type": "string",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ],
+            "description": "Risk level for ambiguity/error"
+        },
+        "required_gates": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Gate IDs that must be run"
+        },
+        "selected_kernels": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Kernel IDs selected for execution"
+        },
+        "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Classification confidence"
+        }
+    },
+    "required": [
+        "domain",
+        "required_gates"
+    ]
+}

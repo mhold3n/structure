@@ -1,0 +1,36 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "task_request.schema.json",
+    "title": "TaskRequest",
+    "description": "Incoming task request from LLM or user",
+    "type": "object",
+    "properties": {
+        "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique request identifier for tracing"
+        },
+        "user_input": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The user's natural language input"
+        },
+        "domain_hint": {
+            "type": "string",
+            "description": "Optional domain hint to guide routing"
+        },
+        "context": {
+            "type": "object",
+            "description": "Additional context from previous turns",
+            "additionalProperties": true
+        },
+        "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Session identifier for multi-turn conversations"
+        }
+    },
+    "required": [
+        "user_input"
+    ]
+}

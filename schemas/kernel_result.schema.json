@@ -1,0 +1,82 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "kernel_result.schema.json",
+    "title": "KernelResult",
+    "description": "Standardized kernel output with provenance",
+    "type": "object",
+    "properties": {
+        "kernel_id": {
+            "type": "string",
+            "description": "ID of the kernel that produced this result"
+        },
+        "version": {
+            "type": "string",
+            "description": "Version of the kernel"
+        },
+        "success": {
+            "type": "boolean",
+            "description": "Whether execution succeeded"
+        },
+        "result": {
+            "description": "The kernel's output (type depends on kernel)"
+        },
+        "units_metadata": {
+            "type": "object",
+            "description": "Unit information for numeric results",
+            "properties": {
+                "input_units": {
+                    "type": "object"
+                },
+                "output_units": {
+                    "type": "object"
+                },
+                "conversions_applied": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "provenance": {
+            "type": "object",
+            "description": "Provenance information for auditability",
+            "properties": {
+                "source": {
+                    "type": "string"
+                },
+                "determinism": {
+                    "type": "string",
+                    "enum": [
+                        "D1",
+                        "D2",
+                        "NONE"
+                    ]
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "input_hash": {
+                    "type": "string"
+                }
+            }
+        },
+        "uncertainty": {
+            "type": "number",
+            "description": "Uncertainty in the result (if applicable)"
+        },
+        "warnings": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Non-fatal warnings during execution"
+        }
+    },
+    "required": [
+        "kernel_id",
+        "version",
+        "success"
+    ]
+}
