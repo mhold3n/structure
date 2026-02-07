@@ -108,7 +108,9 @@ class TestExperimentSafetyGate:
         result = gate.evaluate(
             {
                 "domain": "experiment",
-                "raw_input": "Design study with 50 participants, IRB approved, control group included",
+                "raw_input": (
+                    "Design study with 50 participants, IRB approved, control group included"
+                ),
             }
         )
 
