@@ -1,37 +1,52 @@
 import math
 import statistics
 from typing import List, Dict, Any, Union
-from kernels.base import KernelInterface
+from kernels.base import KernelInterface, register_kernel
 from models.kernel_io import KernelInput, KernelOutput
 
-
+@register_kernel
 class StatisticsKernel(KernelInterface):
     """
     Deterministic kernel for statistical calculations.
     """
 
     kernel_id = "stats_v1"
+    version = "1.0.0"
+    determinism_level = "D1"
     description = "Performs basic descriptive statistics and hypothesis testing (t-test)."
+    
+    def validate_args(self, args: dict) -> tuple[bool, list[str]]:
+        errors = []
+        if "method" not in args:
+            errors.append("Missing 'method' argument")
+        
+        if "data" not in args:
+            errors.append("Missing 'data' argument")
+        else:
+            data = args["data"]
+            if not isinstance(data, (list, dict)):
+                errors.append("'data' must be a list or dictionary")
+        
+        return len(errors) == 0, errors
 
     def execute(self, input: KernelInput) -> KernelOutput:
-        method = input.args.get("method")
-        data = input.args.get("data")
+        args = input.args
+        valid, errors = self.validate_args(args)
+        if not valid:
+            return self._make_output(input.request_id, success=False, error="Invalid arguments: " + "; ".join(errors))
 
-        if not method:
-            return KernelOutput(success=False, error="Missing 'method' argument")
-
-        if not data:
-            return KernelOutput(success=False, error="Missing 'data' argument")
-
+        method = args.get("method")
+        data = args.get("data")
+        
         try:
             if method == "descriptive":
-                return self._descriptive(data)
+                return self._make_output(input.request_id, success=True, result=self._descriptive(data).result)
             elif method == "ttest_ind":
-                return self._ttest_ind(data)
+                return self._make_output(input.request_id, success=True, result=self._ttest_ind(data).result)
             else:
-                return KernelOutput(success=False, error=f"Unknown method '{method}'")
+                return self._make_output(input.request_id, success=False, error=f"Unknown method '{method}'")
         except Exception as e:
-            return KernelOutput(success=False, error=str(e))
+             return self._make_output(input.request_id, success=False, error=str(e))
 
     def _descriptive(self, data: Union[List[float], Dict[str, List[float]]]) -> KernelOutput:
         # data can be a list or a dict of lists

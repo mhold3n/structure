@@ -1,32 +1,47 @@
 from typing import List, Dict, Any
 import re
 from collections import Counter
-from kernels.base import KernelInterface
+from kernels.base import KernelInterface, register_kernel
 from models.kernel_io import KernelInput, KernelOutput
 
 
+@register_kernel
 class SummaryKernel(KernelInterface):
     """
     Deterministic kernel for text and data summarization.
     """
 
     kernel_id = "summary_v1"
+    version = "1.0.0"
+    determinism_level = "D1"
     description = "Extractive summarization and data aggregation."
 
+    def validate_args(self, args: dict) -> tuple[bool, list[str]]:
+        errors = []
+        if "method" not in args:
+             errors.append("Missing 'method' argument")
+        
+        if args.get("method") in ["extractive", "frequency"] and "text" not in args:
+             errors.append("Missing 'text' argument")
+        return len(errors) == 0, errors
+    
     def execute(self, input: KernelInput) -> KernelOutput:
-        method = input.args.get("method")
-        text = input.args.get("text")
+        args = input.args
+        valid, errors = self.validate_args(args)
+        if not valid:
+             return self._make_output(input.request_id, success=False, error="Invalid arguments: " + "; ".join(errors))
 
+        method = args.get("method")
+        text = args.get("text")
+        
         if method == "extractive":
-            if not text:
-                return KernelOutput(success=False, error="Method 'extractive' requires 'text' arg")
-            return self._extractive_summary(text, count=input.args.get("count", 3))
+            output = self._extractive_summary(text, count=args.get("count", 3))
+            return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
         elif method == "frequency":
-            if not text:
-                return KernelOutput(success=False, error="Method 'frequency' requires 'text' arg")
-            return self._frequency_dist(text)
+             output = self._frequency_dist(text)
+             return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
         else:
-            return KernelOutput(success=False, error=f"Unknown method '{method}'")
+             return self._make_output(input.request_id, success=False, error=f"Unknown method '{method}'")
 
     def _extractive_summary(self, text: str, count: int) -> KernelOutput:
         # 1. Split sentences

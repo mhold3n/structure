@@ -2,21 +2,25 @@
     "kernels": [
         {
             "kernel_id": "stats_v1",
+            "version": "1.0.0",
             "class": "kernels.statistics.StatisticsKernel",
             "description": "Descriptive statistics and hypothesis testing"
         },
         {
             "kernel_id": "project_v1",
+            "version": "1.0.0",
             "class": "kernels.project.ProjectKernel",
             "description": "Project planning and timeline validation"
         },
         {
             "kernel_id": "summary_v1",
+            "version": "1.0.0",
             "class": "kernels.summary.SummaryKernel",
             "description": "Text summarization and frequency analysis"
         },
         {
             "kernel_id": "experiment_design_v1",
+            "version": "1.0.0",
             "class": "plugins.experiment.ExperimentKernel",
             "description": "Design scientific experiments"
         }

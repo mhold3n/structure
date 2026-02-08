@@ -1,25 +1,42 @@
 from typing import List, Dict, Any
-from kernels.base import KernelInterface
+from kernels.base import KernelInterface, register_kernel
 from models.kernel_io import KernelInput, KernelOutput
 
 
+@register_kernel
 class ProjectKernel(KernelInterface):
     """
     Deterministic kernel for project planning validations.
     """
-
     kernel_id = "project_v1"
+    version = "1.0.0"
+    determinism_level = "D1"
     description = "Validates project plans, calculates critical path, formats Gantt."
 
+    def validate_args(self, args: dict) -> tuple[bool, list[str]]:
+        errors = []
+        if "method" not in args:
+            errors.append("Missing 'method' argument")
+        if "tasks" not in args:
+             errors.append("Missing 'tasks' argument")
+        return len(errors) == 0, errors
+    
     def execute(self, input: KernelInput) -> KernelOutput:
-        method = input.args.get("method")
+        args = input.args
+        valid, errors = self.validate_args(args)
+        if not valid:
+             return self._make_output(input.request_id, success=False, error="Invalid arguments: " + "; ".join(errors))
 
+        method = args.get("method")
+        
         if method == "validate_timeline":
-            return self._validate_timeline(input.args.get("tasks", []))
+            output = self._validate_timeline(args.get("tasks", []))
+            return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
         elif method == "critical_path":
-            return self._critical_path(input.args.get("tasks", []))
+            output = self._critical_path(args.get("tasks", []))
+            return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
         else:
-            return KernelOutput(success=False, error=f"Unknown method '{method}'")
+            return self._make_output(input.request_id, success=False, error=f"Unknown method '{method}'")
 
     def _validate_timeline(self, tasks: List[Dict]) -> KernelOutput:
         errors = []
