@@ -196,7 +196,7 @@ class TestValidation:
         input = KernelInput(
             request_id="test",
             kernel_id="statistics_v1",
-            args={"operation": "unknown"},
+            args={"operation": "unknown", "data": [1, 2, 3]},
         )
         result = kernel.execute(input)
         assert not result.success
