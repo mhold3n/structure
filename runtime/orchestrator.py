@@ -12,6 +12,9 @@ from router.classifier import classify_task  # To deduce kernels if not set
 from validator.gates import run_gates, get_blocking_decisions
 from gateway.logging import StructuredLogger, AuditRecord
 from gateway.compliance import ComplianceChecker
+from telemetry.tracer import get_tracer
+
+tracer = get_tracer("orchestrator")
 
 logger_struct = StructuredLogger("orchestrator")
 logger = logging.getLogger("orchestrator")
@@ -29,7 +32,10 @@ class Orchestrator:
         """
         Execute a single workflow step.
         """
-        logger.info(f"Executing step {step.step_id}: {step.description}")
+        with tracer.start_as_current_span(f"orchestrator.step.{step.step_id}") as span:
+            span.set_attribute("step_id", step.step_id)
+            span.set_attribute("description", step.description)
+            logger.info(f"Executing step {step.step_id}: {step.description}")
         step.status = WorkflowStatus.ACTIVE
 
         try:
@@ -182,6 +188,8 @@ class Orchestrator:
         """
         Run workflow loop until blocked or finished.
         """
+        with tracer.start_as_current_span("orchestrator.run_workflow") as span:
+            span.set_attribute("workflow_id", workflow.workflow_id)
         # Set session active workflow
         session.active_workflow_id = workflow.workflow_id
         session.update_context(workflow.context)

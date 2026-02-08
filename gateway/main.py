@@ -22,6 +22,9 @@ from models.workflow import Workflow
 from models.session import Session
 from runtime.orchestrator import Orchestrator
 from router.workflow_builder import build_workflow_from_request
+from telemetry.tracer import get_tracer
+
+tracer = get_tracer("gateway")
 
 app = FastAPI(
     title="R&D Orchestration Gateway",
@@ -93,6 +96,10 @@ async def submit_task(input: TaskRequestInput) -> TaskResponse:
     )
 
     logger.log_request(request_id, "task", request.model_dump())
+
+    with tracer.start_as_current_span("gateway.submit_task") as span:
+        span.set_attribute("request_id", request_id)
+        span.set_attribute("domain_hint", str(input.domain_hint))
 
     try:
         # 1. Classify into validated TaskSpec
@@ -259,6 +266,9 @@ async def submit_workflow(input: TaskRequestInput) -> Workflow:
     )
 
     logger.log_request(request_id, "workflow", request.model_dump())
+
+    with tracer.start_as_current_span("gateway.submit_workflow") as span:
+        span.set_attribute("request_id", request_id)
 
     # 2. Build Workflow
     workflow = build_workflow_from_request(request)

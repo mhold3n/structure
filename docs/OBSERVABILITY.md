@@ -1,20 +1,22 @@
-# Observability and Provenance
+# Observability Guide
 
-## Run manifest
+## Tracing
 
-- run_id definition
-- spec_id definition
-- canonical_spec_hash definition
+We use OpenTelemetry for distributed tracing. Spans capture the lifecycle of a request from the Gateway through the Orchestrator to individual Kernels.
 
-## Required logs
+### Key Spans
 
-- gate decisions with reason codes
-- kernel selection + version
-- tool calls (typed)
-- policy profile + determinism_level
+- `gateway.request`: The incoming HTTP request.
+- `orchestrator.workflow`: The execution of a full workflow.
+- `orchestrator.step`: Individual steps within a workflow.
+- `kernel.execute`: The execution of a specific kernel.
+- `gate.check`: Policy checks.
 
-## Storage
+## Metrics
 
-- directories/paths
-- retention
-- redaction policy
+(TODO: Implement metrics collection)
+
+## Logs
+
+Structured JSON logs are emitted to stdout and can be collected by Fluentd/Logstash.
+Refer to `gateway/logging.py` for schema.

@@ -1,0 +1,3 @@
+{"id": "reg_001", "kernel": "stats_v1", "args": {"method": "descriptive", "data": [1, 2, 3, 4, 5]}, "expected": {"mean": 3.0, "median": 3.0, "min": 1, "max": 5}}
+{"id": "reg_002", "kernel": "stats_v1", "args": {"method": "descriptive", "data": {"a": [10, 20], "b": [5, 5]}}, "expected": {"a": {"mean": 15.0}, "b": {"mean": 5.0}}}
+{"id": "reg_003", "kernel": "summary_v1", "args": {"method": "frequency", "text": "apple banana apple orange banana apple"}, "expected": {"apple": 3, "banana": 2, "orange": 1}}
