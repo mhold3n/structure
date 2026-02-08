@@ -8,6 +8,7 @@ class ProjectKernel(KernelInterface):
     """
     Deterministic kernel for project planning validations.
     """
+
     kernel_id = "project_mgmt_v1"
     version = "1.0.0"
     determinism_level = "D1"
@@ -18,25 +19,33 @@ class ProjectKernel(KernelInterface):
         if "method" not in args:
             errors.append("Missing 'method' argument")
         if "tasks" not in args:
-             errors.append("Missing 'tasks' argument")
+            errors.append("Missing 'tasks' argument")
         return len(errors) == 0, errors
-    
+
     def execute(self, input: KernelInput) -> KernelOutput:
         args = input.args
         valid, errors = self.validate_args(args)
         if not valid:
-             return self._make_output(input.request_id, success=False, error="Invalid arguments: " + "; ".join(errors))
+            return self._make_output(
+                input.request_id, success=False, error="Invalid arguments: " + "; ".join(errors)
+            )
 
         method = args.get("method")
-        
+
         if method == "validate_timeline":
             output = self._validate_timeline(args.get("tasks", []))
-            return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
+            return self._make_output(
+                input.request_id, success=output.success, result=output.result, error=output.error
+            )
         elif method == "critical_path":
             output = self._critical_path(args.get("tasks", []))
-            return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
+            return self._make_output(
+                input.request_id, success=output.success, result=output.result, error=output.error
+            )
         else:
-            return self._make_output(input.request_id, success=False, error=f"Unknown method '{method}'")
+            return self._make_output(
+                input.request_id, success=False, error=f"Unknown method '{method}'"
+            )
 
     def _validate_timeline(self, tasks: List[Dict]) -> KernelOutput:
         errors = []

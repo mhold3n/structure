@@ -10,7 +10,10 @@ async def test_e2e_workflow():
         response = await ac.post(
             "/workflow",
             json={
-                "user_input": "1. Calculate mean of [1, 2, 3]. 2. Summarize 'Hello world. Hello universe.'",
+                "user_input": (
+                    "1. Calculate mean of [1, 2, 3]. "
+                    "2. Summarize 'Hello world. Hello universe.'"
+                ),
                 "domain_hint": "analysis",
             },
         )

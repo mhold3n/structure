@@ -19,29 +19,37 @@ class DataSummaryKernel(KernelInterface):
     def validate_args(self, args: dict) -> tuple[bool, list[str]]:
         errors = []
         if "method" not in args:
-             errors.append("Missing 'method' argument")
-        
+            errors.append("Missing 'method' argument")
+
         if args.get("method") in ["extractive", "frequency"] and "text" not in args:
-             errors.append("Missing 'text' argument")
+            errors.append("Missing 'text' argument")
         return len(errors) == 0, errors
-    
+
     def execute(self, input: KernelInput) -> KernelOutput:
         args = input.args
         valid, errors = self.validate_args(args)
         if not valid:
-             return self._make_output(input.request_id, success=False, error="Invalid arguments: " + "; ".join(errors))
+            return self._make_output(
+                input.request_id, success=False, error="Invalid arguments: " + "; ".join(errors)
+            )
 
         method = args.get("method")
         text = args.get("text")
-        
+
         if method == "extractive":
             output = self._extractive_summary(text, count=args.get("count", 3))
-            return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
+            return self._make_output(
+                input.request_id, success=output.success, result=output.result, error=output.error
+            )
         elif method == "frequency":
-             output = self._frequency_dist(text)
-             return self._make_output(input.request_id, success=output.success, result=output.result, error=output.error)
+            output = self._frequency_dist(text)
+            return self._make_output(
+                input.request_id, success=output.success, result=output.result, error=output.error
+            )
         else:
-             return self._make_output(input.request_id, success=False, error=f"Unknown method '{method}'")
+            return self._make_output(
+                input.request_id, success=False, error=f"Unknown method '{method}'"
+            )
 
     def _extractive_summary(self, text: str, count: int) -> KernelOutput:
         # 1. Split sentences
