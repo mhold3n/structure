@@ -11,8 +11,7 @@ async def test_e2e_workflow():
             "/workflow",
             json={
                 "user_input": (
-                    "1. Calculate mean of [1, 2, 3]. "
-                    "2. Summarize 'Hello world. Hello universe.'"
+                    "1. Calculate mean of [1, 2, 3]. 2. Summarize 'Hello world. Hello universe.'"
                 ),
                 "domain_hint": "analysis",
             },
