@@ -10,7 +10,7 @@ class StatisticsKernel(KernelInterface):
     Deterministic kernel for statistical calculations.
     """
 
-    kernel_id = "stats_v1"
+    kernel_id = "statistics_v1"
     version = "1.0.0"
     determinism_level = "D1"
     description = "Performs basic descriptive statistics and hypothesis testing (t-test)."

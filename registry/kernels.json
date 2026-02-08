@@ -1,21 +1,21 @@
 {
     "kernels": [
         {
-            "kernel_id": "stats_v1",
+            "kernel_id": "statistics_v1",
             "version": "1.0.0",
             "class": "kernels.statistics.StatisticsKernel",
             "description": "Descriptive statistics and hypothesis testing"
         },
         {
-            "kernel_id": "project_v1",
+            "kernel_id": "project_mgmt_v1",
             "version": "1.0.0",
             "class": "kernels.project.ProjectKernel",
             "description": "Project planning and timeline validation"
         },
         {
-            "kernel_id": "summary_v1",
+            "kernel_id": "data_summary_v1",
             "version": "1.0.0",
-            "class": "kernels.summary.SummaryKernel",
+            "class": "kernels.data_summary.DataSummaryKernel",
             "description": "Text summarization and frequency analysis"
         },
         {

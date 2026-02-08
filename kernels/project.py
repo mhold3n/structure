@@ -8,7 +8,7 @@ class ProjectKernel(KernelInterface):
     """
     Deterministic kernel for project planning validations.
     """
-    kernel_id = "project_v1"
+    kernel_id = "project_mgmt_v1"
     version = "1.0.0"
     determinism_level = "D1"
     description = "Validates project plans, calculates critical path, formats Gantt."
