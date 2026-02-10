@@ -1,0 +1,17 @@
+{
+  "id": "2fefad49-fd10-42cf-ac81-617c820ea70c",
+  "partition": "train",
+  "provenance": {
+    "source_name": "OpenStax_Physics",
+    "source_uri": "/raw/physics_vol1.pdf",
+    "author": "OpenStax",
+    "date_acquired": "2026-02-08T04:58:43.787689Z",
+    "license": "CC-BY",
+    "ingestion_id": "54eb50b1-554e-4bf8-a2a5-43b27e7a8a64"
+  },
+  "metadata": {
+    "raw_import": true
+  },
+  "content": "This is authoritative text from a physics textbook.",
+  "content_hash": "30b622ed4e79d1af17950f0f3ed883c2"
+}

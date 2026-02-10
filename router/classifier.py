@@ -389,6 +389,7 @@ def classify_task(request: TaskRequest) -> TaskSpec:
         request_id=request.request_id,
         domain=domain,
         subdomain=subdomain,
+        partition=request.partition,
         needs_units=bool(features["units_found"]),
         has_equations=features["has_equations"],
         risk_level=risk_level,

@@ -22,9 +22,12 @@ from models.workflow import Workflow
 from models.session import Session
 from runtime.orchestrator import Orchestrator
 from router.workflow_builder import build_workflow_from_request
-from telemetry.tracer import get_tracer
+from router.workflow_builder import build_workflow_from_request
+# from telemetry.tracer import get_tracer
+from telemetry.otel.setup import setup_telemetry
 
-tracer = get_tracer("gateway")
+# Initialize Telemetry
+tracer, meter = setup_telemetry("gateway", "0.3.0")
 
 app = FastAPI(
     title="R&D Orchestration Gateway",
@@ -44,6 +47,7 @@ class TaskRequestInput(BaseModel):
     user_input: str = Field(..., min_length=1)
     domain_hint: Optional[str] = None
     context: Optional[dict[str, Any]] = None
+    partition: str = "train"
 
 
 class ClarifyPayload(BaseModel):
@@ -87,11 +91,21 @@ async def submit_task(input: TaskRequestInput) -> TaskResponse:
     """
     request_id = str(uuid.uuid4())
 
+    # Partition Enforcement
+    if input.partition == "test":
+        eval_mode = (input.context or {}).get("eval_mode", False)
+        if not eval_mode:
+            raise HTTPException(
+                status_code=403,
+                detail="Security Violation: Access to TEST partition requires 'eval_mode=True' in context."
+            )
+
     # Create typed TaskRequest
     request = TaskRequest(
         request_id=request_id,
         user_input=input.user_input,
         domain_hint=input.domain_hint,
+        partition=input.partition,
         context=input.context or {},
     )
 
