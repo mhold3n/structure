@@ -2,6 +2,7 @@ import os
 import hashlib
 import glob
 import re
+import json
 from typing import Set, Dict, List
 
 # Constants for MinHash
@@ -21,7 +22,7 @@ def compute_minhash(text: str) -> List[int]:
     """Compute MinHash signature for text."""
     shingles = get_shingles(text)
     signature = []
-    
+
     for seed in HASH_SEEDS:
         min_hash = float("inf")
         for shingle in shingles:
@@ -31,7 +32,7 @@ def compute_minhash(text: str) -> List[int]:
             if h_int < min_hash:
                 min_hash = h_int
         signature.append(min_hash)
-    
+
     return signature
 
 
@@ -50,7 +51,9 @@ def load_file_signatures(directory: str) -> Dict[str, List[int]]:
         return signatures
 
     for filepath in glob.glob(os.path.join(directory, "**/*"), recursive=True):
-        if os.path.isfile(filepath) and filepath.endswith(".json"): # Assuming JSON content for documents
+        if os.path.isfile(filepath) and filepath.endswith(
+            ".json"
+        ):  # Assuming JSON content for documents
             try:
                 with open(filepath, "r") as f:
                     # Ingested documents are JSON with a "content" field
@@ -91,9 +94,9 @@ def check_contamination():
 
 
 def check_overlap(source_sigs: Dict[str, List[int]], target_sigs: Dict[str, List[int]], name: str):
-    threshold = 0.8 # Jaccard similarity threshold for "near duplicate"
+    threshold = 0.8  # Jaccard similarity threshold for "near duplicate"
     violations = 0
-    
+
     for s_path, s_sig in source_sigs.items():
         for t_path, t_sig in target_sigs.items():
             sim = compute_jaccard_similarity(s_sig, t_sig)
@@ -103,11 +106,12 @@ def check_overlap(source_sigs: Dict[str, List[int]], target_sigs: Dict[str, List
                 print(f"  Target: {t_path}")
                 print(f"  Similarity: {sim:.2f}")
                 violations += 1
-                
+
     if violations == 0:
         print(f"SUCCESS: No near-duplicates found in {name}.")
     else:
         print(f"WARNING: Found {violations} potential contamination cases in {name}.")
+
 
 if __name__ == "__main__":
     check_contamination()

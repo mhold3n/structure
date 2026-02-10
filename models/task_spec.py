@@ -54,7 +54,6 @@ class QuantityRef(BaseModel):
     )
 
 
-
 class Partition(str, Enum):
     TRAIN = "train"
     DEV = "dev"

@@ -22,7 +22,7 @@ from models.workflow import Workflow
 from models.session import Session
 from runtime.orchestrator import Orchestrator
 from router.workflow_builder import build_workflow_from_request
-from router.workflow_builder import build_workflow_from_request
+
 # from telemetry.tracer import get_tracer
 from telemetry.otel.setup import setup_telemetry
 
@@ -97,7 +97,10 @@ async def submit_task(input: TaskRequestInput) -> TaskResponse:
         if not eval_mode:
             raise HTTPException(
                 status_code=403,
-                detail="Security Violation: Access to TEST partition requires 'eval_mode=True' in context."
+                detail=(
+                    "Security Violation: Access to TEST partition requires "
+                    "'eval_mode=True' in context."
+                ),
             )
 
     # Create typed TaskRequest

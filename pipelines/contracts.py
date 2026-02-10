@@ -10,6 +10,7 @@ class PipelineContext(BaseModel):
     """
     Shared context passed through the pipeline stages.
     """
+
     run_id: str
     config: dict = {}
     dry_run: bool = False
@@ -19,7 +20,7 @@ class PipelineStage(ABC, Generic[T_Input, T_Output]):
     """
     Abstract base class for a single stage in the ingestion pipeline.
     """
-    
+
     def __init__(self, context: PipelineContext):
         self.context = context
 
